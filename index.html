@@ -1,348 +1,406 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mini Mario HTML</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      overflow: hidden;
-      font-family: Arial, Helvetica, sans-serif;
-      background: #6b88ff;
-    }
-
-    #game-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
-
-    #title-screen {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to bottom, #0000aa, #000066);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-      transition: opacity 0.8s;
-    }
-
-    #title-screen h1 {
-      font-size: 5rem;
-      margin: 0;
-      text-shadow: 6px 6px 0 #000;
-      color: #ff4444;
-    }
-
-    #title-screen p {
-      font-size: 2rem;
-      margin: 20px;
-    }
-
-    #title-screen button {
-      font-size: 2rem;
-      padding: 15px 40px;
-      background: #ffdd00;
-      border: 6px solid #000;
-      border-radius: 15px;
-      cursor: pointer;
-      font-weight: bold;
-      box-shadow: 0 8px 0 #aa8800;
-    }
-
-    #title-screen button:active {
-      transform: translateY(4px);
-      box-shadow: 0 4px 0 #aa8800;
-    }
-
-    canvas {
-      image-rendering: pixelated;
-      width: 100%;
-      height: 100%;
-      background: #87CEEB;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lava Boy e Water Girl - Jogo para Dois Jogadores Locais</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #222;
+            font-family: Arial, sans-serif;
+        }
+        #gameCanvas {
+            border: 2px solid #fff;
+            background-color: #000;
+        }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 300px;
+        }
+        #levelInfo {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #fff;
+            font-size: 20px;
+        }
+        #restartButton {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #ff4500;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+    </style>
 </head>
 <body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="instructions">
+        <h2>Instruções</h2>
+        <p><strong>Lava Boy (Fogo):</strong> Use as setas do teclado para mover e pular.</p>
+        <p><strong>Water Girl (Água):</strong> Use WASD para mover e pular.</p>
+        <p>Evite: Lava Boy não pode tocar água, Water Girl não pode tocar lava. Ambos morrem no gosma verde.</p>
+        <p>Colete gemas e chegue às portas para vencer o nível.</p>
+    </div>
+    <div id="levelInfo">Nível: 1</div>
+    <button id="restartButton" onclick="restartGame()">Reiniciar Jogo</button>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const tileSize = 40;
+        const gravity = 0.5;
+        const jumpStrength = -12;
+        const moveSpeed = 3;
 
-<div id="game-container">
-  <div id="title-screen">
-    <h1>Mini Mario</h1>
-    <p>Use ← → para andar • ESPAÇO / ↑ para pular</p>
-    <button id="startBtn">COMEÇAR</button>
-  </div>
+        // Definição de níveis (matriz 2D: 0=vazio, 1=plataforma, 2=lava, 3=água, 4=gosma, 5=gema vermelha, 6=gema azul, 7=porta lava, 8=porta água)
+        const levels = [
+            // Nível 1: Simples
+            [
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4,0,0,8,1]
+            ],
+            // Nível 2: Mais complexo com plataformas elevadas
+            [
+                [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0,1],
+                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1],
+                [1,2,2,2,3,3,3,4,4,4,2,2,2,3,3,3,4,4,4,1]
+            ],
+            // Adicione mais níveis aqui se quiser expandir
+        ];
 
-  <canvas id="gameCanvas"></canvas>
-</div>
+        let currentLevel = 0;
+        let levelMap = levels[currentLevel];
+        let gems = { red: [], blue: [] }; // Posições das gemas
+        let doors = { lava: null, water: null }; // Posições das portas
 
-<script>
-// ================================================
-//  JOGO PRINCIPAL
-// ================================================
+        // Jogadores
+        let lavaBoy = { x: 40, y: 520, vx: 0, vy: 0, width: tileSize, height: tileSize, onGround: false, collectedGems: 0 };
+        let waterGirl = { x: 80, y: 520, vx: 0, vy: 0, width: tileSize, height: tileSize, onGround: false, collectedGems: 0 };
 
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+        // Teclas pressionadas
+        const keys = {};
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+        // Inicializar nível
+        function initLevel() {
+            levelMap = levels[currentLevel];
+            gems.red = [];
+            gems.blue = [];
+            doors.lava = null;
+            doors.water = null;
 
-window.addEventListener('resize', () => {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-});
+            // Encontrar posições de gemas e portas
+            for (let row = 0; row < levelMap.length; row++) {
+                for (let col = 0; col < levelMap[row].length; col++) {
+                    const tile = levelMap[row][col];
+                    if (tile === 5) { // Gema vermelha
+                        gems.red.push({ row, col });
+                    } else if (tile === 6) { // Gema azul
+                        gems.blue.push({ row, col });
+                    } else if (tile === 7) { // Porta lava
+                        doors.lava = { row, col };
+                    } else if (tile === 8) { // Porta água
+                        doors.water = { row, col };
+                    }
+                }
+            }
 
-// ------------------- Estados -------------------
-let gameState = "title"; // "title" | "playing" | "gameover"
+            // Resetar jogadores
+            lavaBoy.x = 40;
+            lavaBoy.y = 520;
+            lavaBoy.vx = 0;
+            lavaBoy.vy = 0;
+            lavaBoy.onGround = false;
+            lavaBoy.collectedGems = 0;
 
-// ------------------- Player -------------------
-const player = {
-  x: 100,
-  y: 300,
-  width: 40,
-  height: 60,
-  vx: 0,
-  vy: 0,
-  speed: 4,
-  jumpPower: -13,
-  gravity: 0.6,
-  onGround: false,
-  facingRight: true
-};
+            waterGirl.x = 80;
+            waterGirl.y = 520;
+            waterGirl.vx = 0;
+            waterGirl.vy = 0;
+            waterGirl.onGround = false;
+            waterGirl.collectedGems = 0;
 
-// ------------------- Teclas -------------------
-const keys = {};
-window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-window.addEventListener('keyup',   e => keys[e.key.toLowerCase()] = false);
+            document.getElementById('levelInfo').textContent = `Nível: ${currentLevel + 1}`;
+            document.getElementById('restartButton').style.display = 'none';
+        }
 
-// ------------------- Plataformas -------------------
-const platforms = [
-  {x: 0,   y: canvas.height-40, w: canvas.width*2, h: 80},
-  {x: 300, y: 500, w: 280, h: 30},
-  {x: 700, y: 380, w: 220, h: 30},
-  {x: 1100,y: 480, w: 300, h: 30},
-  {x: 1600,y: 320, w: 240, h: 30},
-];
+        // Atualizar física do jogador
+        function updatePlayer(player, isLavaBoy) {
+            player.vy += gravity;
+            player.y += player.vy;
+            player.x += player.vx;
 
-// ------------------- Inimigos -------------------
-const enemies = [
-  {
-    x: 900,
-    y: 0,
-    width: 40,
-    height: 40,
-    vx: -1.8,
-    onGround: false,
-    alive: true
-  },
-  {
-    x: 1400,
-    y: 0,
-    width: 40,
-    height: 40,
-    vx: 2.2,
-    onGround: false,
-    alive: true
-  }
-];
+            // Colisão com chão/plataformas
+            player.onGround = false;
+            for (let row = 0; row < levelMap.length; row++) {
+                for (let col = 0; col < levelMap[row].length; col++) {
+                    const tile = levelMap[row][col];
+                    if (tile === 1 || tile === 0) continue; // Ignorar vazio e plataforma normal por enquanto
 
-// ================================================
-//  LOOP PRINCIPAL
-// ================================================
-function gameLoop() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+                    const tileX = col * tileSize;
+                    const tileY = row * tileSize;
 
-  if (gameState === "title") {
-    // só mostra a tela de título (controlada pelo HTML)
-  }
-  else if (gameState === "playing") {
-    updatePlayer();
-    updateEnemies();
-    checkCollisions();
-    drawEverything();
-  }
-  else if (gameState === "gameover") {
-    drawGameOver();
-  }
+                    // Colisão vertical (chão/teto)
+                    if (player.x + player.width > tileX && player.x < tileX + tileSize &&
+                        player.y + player.height > tileY && player.y < tileY + tileSize) {
 
-  requestAnimationFrame(gameLoop);
-}
+                        if (tile === 1) { // Plataforma
+                            if (player.vy > 0 && player.y + player.height <= tileY + player.vy) {
+                                player.y = tileY - player.height;
+                                player.vy = 0;
+                                player.onGround = true;
+                            } else if (player.vy < 0 && player.y >= tileY + tileSize - player.vy) {
+                                player.y = tileY + tileSize;
+                                player.vy = 0;
+                            }
+                        } else if ((tile === 2 && !isLavaBoy) || (tile === 3 && isLavaBoy) || tile === 4) {
+                            // Morte
+                            resetLevel();
+                        }
+                    }
 
-function updatePlayer() {
-  // Movimento horizontal
-  player.vx = 0;
-  if (keys['arrowleft'] || keys['a']) {
-    player.vx = -player.speed;
-    player.facingRight = false;
-  }
-  if (keys['arrowright'] || keys['d']) {
-    player.vx = player.speed;
-    player.facingRight = true;
-  }
+                    // Colisão horizontal (paredes)
+                    if (player.y + player.height > tileY && player.y < tileY + tileSize &&
+                        player.x + player.width > tileX && player.x < tileX + tileSize) {
 
-  // Pulo
-  if ((keys[' '] || keys['arrowup'] || keys['w']) && player.onGround) {
-    player.vy = player.jumpPower;
-    player.onGround = false;
-  }
+                        if (tile === 1) {
+                            if (player.vx > 0 && player.x + player.width <= tileX + player.vx) {
+                                player.x = tileX - player.width;
+                            } else if (player.vx < 0 && player.x >= tileX + tileSize - player.vx) {
+                                player.x = tileX + tileSize;
+                            }
+                            player.vx = 0;
+                        }
+                    }
+                }
+            }
 
-  // Gravidade
-  player.vy += player.gravity;
+            // Colisão com gemas
+            const gemList = isLavaBoy ? gems.red : gems.blue;
+            for (let i = gemList.length - 1; i >= 0; i--) {
+                const gem = gemList[i];
+                const gemX = gem.col * tileSize;
+                const gemY = gem.row * tileSize;
+                if (player.x + player.width > gemX && player.x < gemX + tileSize &&
+                    player.y + player.height > gemY && player.y < gemY + tileSize) {
+                    levelMap[gem.row][gem.col] = 0; // Remover gema
+                    gemList.splice(i, 1);
+                    player.collectedGems++;
+                }
+            }
 
-  player.x += player.vx;
-  player.y += player.vy;
+            // Colisão com portas
+            const door = isLavaBoy ? doors.lava : doors.water;
+            if (door) {
+                const doorX = door.col * tileSize;
+                const doorY = door.row * tileSize;
+                if (player.x + player.width > doorX && player.x < doorX + tileSize &&
+                    player.y + player.height > doorY && player.y < doorY + tileSize) {
+                    checkWin();
+                }
+            }
 
-  // Colisão com plataformas
-  player.onGround = false;
-  for (let p of platforms) {
-    if (
-      player.x + player.width > p.x &&
-      player.x < p.x + p.w &&
-      player.y + player.height > p.y &&
-      player.y + player.height - player.vy <= p.y
-    ) {
-      if (player.vy > 0) { // caindo
-        player.y = p.y - player.height;
-        player.vy = 0;
-        player.onGround = true;
-      }
-    }
-  }
+            // Limites da tela
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            if (player.y < 0) player.y = 0;
+            if (player.y + player.height > canvas.height) {
+                player.y = canvas.height - player.height;
+                player.vy = 0;
+                player.onGround = true;
+            }
+        }
 
-  // Limites da tela (simples)
-  if (player.x < 0) player.x = 0;
-  if (player.y > canvas.height) {
-    die();
-  }
-}
+        // Verificar vitória
+        function checkWin() {
+            if (lavaBoy.x + lavaBoy.width > doors.lava.col * tileSize && lavaBoy.x < (doors.lava.col + 1) * tileSize &&
+                lavaBoy.y + lavaBoy.height > doors.lava.row * tileSize && lavaBoy.y < (doors.lava.row + 1) * tileSize &&
+                waterGirl.x + waterGirl.width > doors.water.col * tileSize && waterGirl.x < (doors.water.col + 1) * tileSize &&
+                waterGirl.y + waterGirl.height > doors.water.row * tileSize && waterGirl.y < (doors.water.row + 1) * tileSize) {
+                if (currentLevel < levels.length - 1) {
+                    currentLevel++;
+                    initLevel();
+                } else {
+                    alert('Parabéns! Você completou todos os níveis!');
+                    restartGame();
+                }
+            }
+        }
 
-function updateEnemies() {
-  for (let enemy of enemies) {
-    if (!enemy.alive) continue;
+        // Resetar nível
+        function resetLevel() {
+            alert('Um jogador morreu! Reiniciando nível.');
+            initLevel();
+        }
 
-    enemy.x += enemy.vx;
+        // Reiniciar jogo inteiro
+        function restartGame() {
+            currentLevel = 0;
+            initLevel();
+        }
 
-    // Inimigo bateu na parede invisível → inverte direção
-    if (enemy.x < 200 || enemy.x > 1800) {
-      enemy.vx *= -1;
-    }
+        // Renderizar mapa
+        function renderMap() {
+            for (let row = 0; row < levelMap.length; row++) {
+                for (let col = 0; col < levelMap[row].length; col++) {
+                    const tile = levelMap[row][col];
+                    const x = col * tileSize;
+                    const y = row * tileSize;
 
-    // Gravidade nos inimigos também
-    enemy.vy = (enemy.vy || 0) + player.gravity;
-    enemy.y += enemy.vy;
+                    switch (tile) {
+                        case 1: // Plataforma
+                            ctx.fillStyle = '#888';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            break;
+                        case 2: // Lava
+                            ctx.fillStyle = '#ff4500';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            break;
+                        case 3: // Água
+                            ctx.fillStyle = '#00bfff';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            break;
+                        case 4: // Gosma
+                            ctx.fillStyle = '#32cd32';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            break;
+                        case 5: // Gema vermelha
+                            ctx.fillStyle = '#ff0000';
+                            ctx.beginPath();
+                            ctx.arc(x + tileSize/2, y + tileSize/2, tileSize/3, 0, Math.PI * 2);
+                            ctx.fill();
+                            break;
+                        case 6: // Gema azul
+                            ctx.fillStyle = '#0000ff';
+                            ctx.beginPath();
+                            ctx.arc(x + tileSize/2, y + tileSize/2, tileSize/3, 0, Math.PI * 2);
+                            ctx.fill();
+                            break;
+                        case 7: // Porta lava
+                            ctx.fillStyle = '#ff8c00';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#fff';
+                            ctx.font = '20px Arial';
+                            ctx.fillText('Lava', x + 5, y + 25);
+                            break;
+                        case 8: // Porta água
+                            ctx.fillStyle = '#1e90ff';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.fillStyle = '#fff';
+                            ctx.font = '20px Arial';
+                            ctx.fillText('Água', x + 5, y + 25);
+                            break;
+                    }
+                }
+            }
+        }
 
-    // Colisão com plataformas (inimigos simples ficam só no chão)
-    for (let p of platforms) {
-      if (
-        enemy.x + enemy.width > p.x &&
-        enemy.x < p.x + p.w &&
-        enemy.y + enemy.height > p.y &&
-        enemy.y + enemy.height - (enemy.vy||0) <= p.y
-      ) {
-        enemy.y = p.y - enemy.height;
-        enemy.vy = 0;
-      }
-    }
-  }
-}
+        // Renderizar jogadores
+        function renderPlayers() {
+            // Lava Boy
+            ctx.fillStyle = '#ff4500';
+            ctx.fillRect(lavaBoy.x, lavaBoy.y, lavaBoy.width, lavaBoy.height);
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Lava', lavaBoy.x + 5, lavaBoy.y + 20);
 
-function checkCollisions() {
-  for (let enemy of enemies) {
-    if (!enemy.alive) continue;
+            // Water Girl
+            ctx.fillStyle = '#00bfff';
+            ctx.fillRect(waterGirl.x, waterGirl.y, waterGirl.width, waterGirl.height);
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Water', waterGirl.x + 5, waterGirl.y + 20);
+        }
 
-    // Colisão simples AABB
-    if (
-      player.x < enemy.x + enemy.width &&
-      player.x + player.width > enemy.x &&
-      player.y < enemy.y + enemy.height &&
-      player.y + player.height > enemy.y
-    ) {
-      // Se o player está caindo em cima do inimigo → mata inimigo
-      if (player.vy > 0 && player.y + player.height - player.vy <= enemy.y + 10) {
-        enemy.alive = false;
-        player.vy = -10; // quique
-      }
-      // Senão → player morre
-      else {
-        die();
-      }
-    }
-  }
-}
+        // Loop do jogo
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-function die() {
-  gameState = "gameover";
-  setTimeout(() => {
-    // Reset simples
-    player.x = 100;
-    player.y = 300;
-    player.vx = 0;
-    player.vy = 0;
-    for (let e of enemies) {
-      e.alive = true;
-      e.x = e.x < 1000 ? 900 : 1400; // volta posição inicial aproximada
-    }
-    gameState = "playing";
-  }, 1800);
-}
+            // Atualizar jogadores
+            if (keys['ArrowLeft']) lavaBoy.vx = -moveSpeed;
+            else if (keys['ArrowRight']) lavaBoy.vx = moveSpeed;
+            else lavaBoy.vx = 0;
 
-function drawEverything() {
-  // Chão / plataformas
-  ctx.fillStyle = "#654321";
-  for (let p of platforms) {
-    ctx.fillRect(p.x, p.y, p.w, p.h);
-  }
+            if (keys['ArrowUp'] && lavaBoy.onGround) {
+                lavaBoy.vy = jumpStrength;
+                lavaBoy.onGround = false;
+            }
 
-  // Player (Mario simplificado)
-  ctx.fillStyle = player.facingRight ? "#ff4444" : "#ff6666";
-  ctx.fillRect(player.x, player.y, player.width, player.height);
+            if (keys['a']) waterGirl.vx = -moveSpeed;
+            else if (keys['d']) waterGirl.vx = moveSpeed;
+            else waterGirl.vx = 0;
 
-  ctx.fillStyle = "#000";
-  // chapéu
-  ctx.fillRect(player.x + (player.facingRight?10:0), player.y-10, 20, 10);
-  // olhos
-  ctx.fillRect(player.x + (player.facingRight?22:8), player.y+15, 6, 6);
+            if (keys['w'] && waterGirl.onGround) {
+                waterGirl.vy = jumpStrength;
+                waterGirl.onGround = false;
+            }
 
-  // Inimigos (Goomba-like)
-  for (let e of enemies) {
-    if (!e.alive) continue;
-    ctx.fillStyle = "#964B00";
-    ctx.fillRect(e.x, e.y, e.width, e.height);
-    ctx.fillStyle = "#000";
-    ctx.fillRect(e.x+8, e.y+10, 8, 8);
-    ctx.fillRect(e.x+24, e.y+10, 8, 8);
-  }
-}
+            updatePlayer(lavaBoy, true);
+            updatePlayer(waterGirl, false);
 
-function drawGameOver() {
-  ctx.fillStyle = "rgba(0,0,0,0.7)";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+            // Renderizar
+            renderMap();
+            renderPlayers();
 
-  ctx.fillStyle = "white";
-  ctx.font = "80px Arial";
-  ctx.textAlign = "center";
-  ctx.fillText("VOCÊ MORREU!", canvas.width/2, canvas.height/2 - 40);
+            requestAnimationFrame(gameLoop);
+        }
 
-  ctx.font = "40px Arial";
-  ctx.fillText("Reiniciando...", canvas.width/2, canvas.height/2 + 40);
-}
+        // Eventos de teclado
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            if (e.key === 'r') resetLevel();
+        });
 
-// Inicia o jogo
-document.getElementById('startBtn').addEventListener('click', () => {
-  document.getElementById('title-screen').style.opacity = '0';
-  setTimeout(() => {
-    document.getElementById('title-screen').style.display = 'none';
-    gameState = "playing";
-  }, 800);
-});
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
 
-gameLoop();
-</script>
+        // Iniciar jogo
+        initLevel();
+        gameLoop();
+    </script>
 </body>
 </html>
