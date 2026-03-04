@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mini Mario - Fase Completa</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #6b88ff;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #title-screen {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, #0000aa, #000066);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: opacity 0.8s;
+    }
+
+    #title-screen h1 {
+      font-size: 5rem;
+      margin: 0;
+      text-shadow: 6px 6px 0 #000;
+      color: #ff4444;
+    }
+
+    #title-screen p {
+      font-size: 2rem;
+      margin: 20px;
+      text-align: center;
+    }
+
+    #title-screen button {
+      font-size: 2rem;
+      padding: 15px 40px;
+      background: #ffdd00;
+      border: 6px solid #000;
+      border-radius: 15px;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 8px 0 #aa8800;
+    }
+
+    #title-screen button:active {
+      transform: translateY(4px);
+      box-shadow: 0 4px 0 #aa8800;
+    }
+
+    canvas {
+      image-rendering: pixelated;
+      width: 100%;
+      height: 100%;
+      background: #87CEEB;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="title-screen">
+    <h1>Mini Mario</h1>
+    <p>Use ← → A D para andar<br>ESPAÇO ↑ W para pular</p>
+    <button id="startBtn">COMEÇAR A AVENTURA</button>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+</div>
+
+<script>
+// ================================================
+//  JOGO MELHORADO COM FASES E GRÁFICOS!
+// ================================================
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let canvasWidth = window.innerWidth;
+let canvasHeight = window.innerHeight;
+canvas.width = canvasWidth;
+canvas.height = canvasHeight;
+
+window.addEventListener('resize', () => {
+  canvasWidth = window.innerWidth;
+  canvasHeight = window.innerHeight;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+  if (gameState !== 'title') {
+    initCurrentLevel(); // Ajusta posições para nova altura (reseta nível atual)
+  }
+});
+
+// ------------------- Estados -------------------
+let gameState = 'title'; // title | playing | gameover | levelcomplete | win
+let currentLevel = 0;
+let time = 0;
+const WORLD_WIDTH = 3600;
+
+// ------------------- Câmera -------------------
+const camera = { x: 0 };
+
+// ------------------- Nuvens -------------------
+let clouds = [];
+
+// ------------------- Player (Mario) -------------------
+const player = {
+  x: 80,
+  y: 0,
+  width: 42,
+  height: 64,
+  vx: 0,
+  vy: 0,
+  speed: 5,
+  jumpPower: -14.5,
+  gravity: 0.65,
+  onGround: false,
+  facingRight: true
+};
+
+// ------------------- Teclas -------------------
+const keys = {};
+window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+// ------------------- Níveis -------------------
+const levels = [
+  // Nível 1
+  {
+    worldWidth: WORLD_WIDTH,
+    flagX: 3550,
+    startX: 80,
+    getPlatforms: (h) => [
+      {x: 0, y: h - 80, w: WORLD_WIDTH, h: 80}, // chão
+      {x: 250, y: h - 200, w: 120, h: 30},
+      {x: 450, y: h - 280, w: 180, h: 30},
+      {x: 750, y: h - 200, w: 250, h: 30},
+      {x: 1150, y: h - 140, w: 200, h: 30},
+      {x: 1600, y: h - 280, w: 180, h: 30},
+      {x: 2000, y: h - 200, w: 300, h: 30},
+      {x: 2400, y: h - 340, w: 150, h: 30},
+      {x: 2700, y: h - 200, w: 400, h: 30},
+      {x: 3100, y: h - 260, w: 200, h: 30}
+    ],
+    getEnemies: (h) => [
+      {x: 850, patrolMin: 700, patrolMax: 1100, vx: -1.5, width: 40, height: 40},
+      {x: 1700, patrolMin: 1600, patrolMax: 1900, vx: 1.8, width: 40, height: 40},
+      {x: 2550, patrolMin: 2400, patrolMax: 2800, vx: -1.2, width: 40, height: 40}
+    ]
+  },
+  // Nível 2 (mais desafiador)
+  {
+    worldWidth: WORLD_WIDTH,
+    flagX: 3550,
+    startX: 80,
+    getPlatforms: (h) => [
+      {x: 0, y: h - 80, w: WORLD_WIDTH, h: 80}, // chão
+      {x: 150, y: h - 160, w: 100, h: 30},
+      {x: 350, y: h - 280, w: 100, h: 30},
+      {x: 550, y: h - 160, w: 150, h: 30},
+      {x: 850, y: h - 240, w: 200, h: 30},
+      {x: 1200, y: h - 340, w: 120, h: 30},
+      {x: 1400, y: h - 220, w: 180, h: 30},
+      {x: 1700, y: h - 300, w: 250, h: 30},
+      {x: 2100, y: h - 180, w: 150, h: 30},
+      {x: 2400, y: h - 260, w: 200, h: 30},
+      {x: 2800, y: h - 200, w: 200, h: 30},
+      {x: 3100, y: h - 140, w: 150, h: 30}
+    ],
+    getEnemies: (h) => [
+      {x: 450, patrolMin: 350, patrolMax: 600, vx: 1.5, width: 40, height: 40},
+      {x: 1300, patrolMin: 1200, patrolMax: 1500, vx: -1.8, width: 40, height: 40},
+      {x: 1900, patrolMin: 1800, patrolMax: 2200, vx: 1.2, width: 40, height: 40},
+      {x: 2900, patrolMin: 2800, patrolMax: 3200, vx: -1.5, width: 40, height: 40}
+    ]
+  }
+];
+
+// Plataformas e inimigos atuais
+let platforms = [];
+let enemies = [];
+
+// ================================================
+//  INICIALIZAÇÃO
+// ================================================
+function initClouds() {
+  clouds = [];
+  for (let i = 0; i < 8; i++) {
+    clouds.push({
+      worldX: Math.random() * WORLD_WIDTH * 1.2,
+      y: 80 + Math.random() * 120,
+      size: 40 + Math.random() * 60
+    });
+  }
+}
+
+function initCurrentLevel() {
+  const h = canvasHeight;
+  const level = levels[currentLevel];
+  platforms = level.getPlatforms(h);
+  enemies = level.getEnemies(h).map(e => ({ ...e, vy: 0, alive: true }));
+  player.x = level.startX;
+  player.y = platforms[0].y - player.height;
+  player.vx = 0;
+  player.vy = 0;
+  player.onGround = false;
+  camera.x = 0;
+}
+
+function nextLevel() {
+  if (currentLevel < levels.length - 1) {
+    currentLevel++;
+    initCurrentLevel();
+    gameState = 'playing';
+  } else {
+    gameState = 'win';
+  }
+}
+
+// ================================================
+//  LOOP PRINCIPAL
+// ================================================
+function gameLoop() {
+  time += 1 / 60;
+
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+  if (gameState === 'title') {
+    // Tela de título gerenciada pelo HTML
+  } else if (gameState === 'playing') {
+    updatePlayer();
+    updateEnemies();
+    updateClouds();
+    updateCamera();
+    checkCollisions();
+    checkWin();
+    drawEverything();
+  } else if (gameState === 'gameover') {
+    drawEverything();
+    drawGameOver();
+  } else if (gameState === 'levelcomplete') {
+    drawEverything();
+    drawLevelComplete();
+  } else if (gameState === 'win') {
+    drawEverything();
+    drawWin();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ------------------- UPDATES -------------------
+function updatePlayer() {
+  // Movimento horizontal
+  player.vx = 0;
+  if (keys['arrowleft'] || keys['a']) {
+    player.vx = -player.speed;
+    player.facingRight = false;
+  }
+  if (keys['arrowright'] || keys['d']) {
+    player.vx = player.speed;
+    player.facingRight = true;
+  }
+
+  // Pulo
+  if ((keys[' '] || keys['arrowup'] || keys['w']) && player.onGround) {
+    player.vy = player.jumpPower;
+    player.onGround = false;
+  }
+
+  // Gravidade
+  player.vy += player.gravity;
+  player.x += player.vx;
+  player.y += player.vy;
+
+  // Colisões com plataformas
+  player.onGround = false;
+  for (let p of platforms) {
+    if (
+      player.x + player.width > p.x &&
+      player.x < p.x + p.w &&
+      player.y + player.height > p.y &&
+      player.y < p.y + p.h &&
+      player.vy >= 0
+    ) {
+      player.y = p.y - player.height;
+      player.vy = 0;
+      player.onGround = true;
+    }
+  }
+
+  // Morte por queda
+  if (player.y > canvasHeight + 100) {
+    die();
+  }
+}
+
+function updateEnemies() {
+  for (let enemy of enemies) {
+    if (!enemy.alive) continue;
+
+    // Horizontal + patrulha
+    enemy.x += enemy.vx;
+    if (enemy.x <= enemy.patrolMin || enemy.x + enemy.width >= enemy.patrolMax) {
+      enemy.vx *= -1;
+    }
+
+    // Gravidade e colisão
+    enemy.vy = (enemy.vy || 0) + player.gravity;
+    enemy.y += enemy.vy;
+    for (let p of platforms) {
+      if (
+        enemy.x + enemy.width > p.x &&
+        enemy.x < p.x + p.w &&
+        enemy.y + enemy.height > p.y &&
+        enemy.y < p.y + p.h &&
+        enemy.vy >= 0
+      ) {
+        enemy.y = p.y - enemy.height;
+        enemy.vy = 0;
+      }
+    }
+  }
+}
+
+function updateClouds() {
+  for (let c of clouds) {
+    c.worldX -= 0.2;
+    if (c.worldX < -300) {
+      c.worldX += WORLD_WIDTH * 1.3;
+    }
+  }
+}
+
+function updateCamera() {
+  const level = levels[currentLevel];
+  let targetX = player.x - canvasWidth / 3;
+  camera.x += (targetX - camera.x) * 0.15;
+  if (camera.x < 0) camera.x = 0;
+  if (camera.x > level.worldWidth - canvasWidth) {
+    camera.x = level.worldWidth - canvasWidth;
+  }
+}
+
+function checkCollisions() {
+  for (let enemy of enemies) {
+    if (!enemy.alive) continue;
+
+    // Colisão AABB
+    if (
+      player.x < enemy.x + enemy.width &&
+      player.x + player.width > enemy.x &&
+      player.y < enemy.y + enemy.height &&
+      player.y + player.height > enemy.y
+    ) {
+      // Pular em cima mata inimigo
+      if (player.vy > 0 && player.y + player.height - player.vy <= enemy.y + 12) {
+        enemy.alive = false;
+        player.vy = player.jumpPower * 0.7; // Quicou!
+      } else {
+        die();
+      }
+    }
+  }
+}
+
+function checkWin() {
+  const level = levels[currentLevel];
+  if (player.x + player.width > level.flagX && player.onGround) {
+    gameState = 'levelcomplete';
+    setTimeout(nextLevel, 2200);
+  }
+}
+
+function die() {
+  gameState = 'gameover';
+  setTimeout(() => {
+    initCurrentLevel();
+    gameState = 'playing';
+  }, 2200);
+}
+
+// ------------------- DRAWS -------------------
+function drawEverything() {
+  drawBackground();
+
+  ctx.save();
+  ctx.translate(-camera.x, 0);
+
+  // Plataformas
+  drawGround(platforms[0]);
+  for (let i = 1; i < platforms.length; i++) {
+    drawPlatform(platforms[i]);
+  }
+
+  // Player
+  drawMario();
+
+  // Inimigos
+  for (let e of enemies) {
+    if (e.alive) drawGoomba(e);
+  }
+
+  // Bandeira
+  drawFlag(levels[currentLevel].flagX, platforms[0].y);
+
+  ctx.restore();
+
+  // UI
+  drawUI();
+}
+
+function drawBackground() {
+  // Céu gradiente
+  const grad = ctx.createLinearGradient(0, 0, 0, canvasHeight);
+  grad.addColorStop(0, '#5CDBF5');
+  grad.addColorStop(0.4, '#A8E6CF');
+  grad.addColorStop(1, '#87CEEB');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+  // Nuvens (parallax)
+  ctx.fillStyle = 'rgba(255,255,255,0.95)';
+  for (let c of clouds) {
+    const sx = c.worldX - camera.x;
+    ctx.beginPath();
+    ctx.arc(sx - 25, c.y, c.size / 2.5, 0, Math.PI * 2);
+   
