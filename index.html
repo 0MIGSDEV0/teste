@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lava Boy e Water Girl - Jogo para Dois Jogadores Locais</title>
+    <title>Lava Boy e Water Girl - Dois Jogadores Locais</title>
     <style>
         body {
             margin: 0;
@@ -27,7 +27,7 @@
             background-color: rgba(0, 0, 0, 0.7);
             padding: 10px;
             border-radius: 5px;
-            max-width: 300px;
+            max-width: 320px;
         }
         #levelInfo {
             position: absolute;
@@ -56,24 +56,26 @@
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     <div id="instructions">
         <h2>Instruções</h2>
-        <p><strong>Lava Boy (Fogo):</strong> Use as setas do teclado para mover e pular.</p>
-        <p><strong>Water Girl (Água):</strong> Use WASD para mover e pular.</p>
-        <p>Evite: Lava Boy não pode tocar água, Water Girl não pode tocar lava. Ambos morrem no gosma verde.</p>
-        <p>Colete gemas e chegue às portas para vencer o nível.</p>
+        <p><strong>Lava Boy (Fogo):</strong> Setas ← ↑ → para mover e pular</p>
+        <p><strong>Water Girl (Água):</strong> WASD para mover e pular</p>
+        <p>Evite: Fogo → não toca água | Água → não toca lava | Ambos morrem na gosma verde</p>
+        <p>Colete as gemas da sua cor e chegue à porta correspondente</p>
     </div>
     <div id="levelInfo">Nível: 1</div>
     <button id="restartButton" onclick="restartGame()">Reiniciar Jogo</button>
+
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const tileSize = 40;
-        const gravity = 0.5;
-        const jumpStrength = -12;
-        const moveSpeed = 3;
+        const gravity = 0.6;
+        const jumpStrength = -13;
+        const moveSpeed = 3.5;
 
-        // Definição de níveis (matriz 2D: 0=vazio, 1=plataforma, 2=lava, 3=água, 4=gosma, 5=gema vermelha, 6=gema azul, 7=porta lava, 8=porta água)
+        // 0 = vazio, 1 = plataforma sólida, 2 = lava, 3 = água, 4 = gosma venenosa,
+        // 5 = gema vermelha (fogo), 6 = gema azul (água), 7 = porta fogo, 8 = porta água
         const levels = [
-            // Nível 1: Simples
+            // Nível 1 - com base inicial segura
             [
                 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -85,46 +87,63 @@
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                 [1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4,0,0,8,1]
             ],
-            // Nível 2: Mais complexo com plataformas elevadas
+            // Nível 2 - também com base inicial segura
             [
                 [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,0,1],
+                [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                 [1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,0,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-                [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+                [1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,7,0,1],
                 [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,1],
                 [1,2,2,2,3,3,3,4,4,4,2,2,2,3,3,3,4,4,4,1]
-            ],
-            // Adicione mais níveis aqui se quiser expandir
+            ]
         ];
 
         let currentLevel = 0;
         let levelMap = levels[currentLevel];
-        let gems = { red: [], blue: [] }; // Posições das gemas
-        let doors = { lava: null, water: null }; // Posições das portas
+        let gems = { red: [], blue: [] };
+        let doors = { lava: null, water: null };
 
-        // Jogadores
-        let lavaBoy = { x: 40, y: 520, vx: 0, vy: 0, width: tileSize, height: tileSize, onGround: false, collectedGems: 0 };
-        let waterGirl = { x: 80, y: 520, vx: 0, vy: 0, width: tileSize, height: tileSize, onGround: false, collectedGems: 0 };
+        // Posição inicial segura (em cima da plataforma inicial)
+        const startX = 3 * tileSize;   // coluna 3
+        const startY = 10 * tileSize;  // linha 10 (plataforma sólida)
 
-        // Teclas pressionadas
+        let lavaBoy = {
+            x: startX,
+            y: startY - tileSize,  // exatamente em cima da plataforma
+            vx: 0, vy: 0,
+            width: tileSize,
+            height: tileSize,
+            onGround: true,
+            collectedGems: 0
+        };
+
+        let waterGirl = {
+            x: startX + tileSize * 1.5,
+            y: startY - tileSize,
+            vx: 0, vy: 0,
+            width: tileSize,
+            height: tileSize,
+            onGround: true,
+            collectedGems: 0
+        };
+
         const keys = {};
 
-        // Inicializar nível
         function initLevel() {
             levelMap = levels[currentLevel];
             gems.red = [];
@@ -132,113 +151,122 @@
             doors.lava = null;
             doors.water = null;
 
-            // Encontrar posições de gemas e portas
-            for (let row = 0; row < levelMap.length; row++) {
-                for (let col = 0; col < levelMap[row].length; col++) {
-                    const tile = levelMap[row][col];
-                    if (tile === 5) { // Gema vermelha
-                        gems.red.push({ row, col });
-                    } else if (tile === 6) { // Gema azul
-                        gems.blue.push({ row, col });
-                    } else if (tile === 7) { // Porta lava
-                        doors.lava = { row, col };
-                    } else if (tile === 8) { // Porta água
-                        doors.water = { row, col };
-                    }
+            for (let r = 0; r < levelMap.length; r++) {
+                for (let c = 0; c < levelMap[r].length; c++) {
+                    const t = levelMap[r][c];
+                    if (t === 5) gems.red.push({row: r, col: c});
+                    if (t === 6) gems.blue.push({row: r, col: c});
+                    if (t === 7) doors.lava = {row: r, col: c};
+                    if (t === 8) doors.water = {row: r, col: c};
                 }
             }
 
-            // Resetar jogadores
-            lavaBoy.x = 40;
-            lavaBoy.y = 520;
+            // Resetar posições seguras
+            lavaBoy.x = startX;
+            lavaBoy.y = startY - tileSize;
             lavaBoy.vx = 0;
             lavaBoy.vy = 0;
-            lavaBoy.onGround = false;
+            lavaBoy.onGround = true;
             lavaBoy.collectedGems = 0;
 
-            waterGirl.x = 80;
-            waterGirl.y = 520;
+            waterGirl.x = startX + tileSize * 1.5;
+            waterGirl.y = startY - tileSize;
             waterGirl.vx = 0;
             waterGirl.vy = 0;
-            waterGirl.onGround = false;
+            waterGirl.onGround = true;
             waterGirl.collectedGems = 0;
 
             document.getElementById('levelInfo').textContent = `Nível: ${currentLevel + 1}`;
             document.getElementById('restartButton').style.display = 'none';
         }
 
-        // Atualizar física do jogador
         function updatePlayer(player, isLavaBoy) {
             player.vy += gravity;
             player.y += player.vy;
             player.x += player.vx;
 
-            // Colisão com chão/plataformas
             player.onGround = false;
-            for (let row = 0; row < levelMap.length; row++) {
-                for (let col = 0; col < levelMap[row].length; col++) {
-                    const tile = levelMap[row][col];
-                    if (tile === 1 || tile === 0) continue; // Ignorar vazio e plataforma normal por enquanto
 
-                    const tileX = col * tileSize;
-                    const tileY = row * tileSize;
+            for (let r = 0; r < levelMap.length; r++) {
+                for (let c = 0; c < levelMap[r].length; c++) {
+                    const tile = levelMap[r][c];
+                    if (tile === 0) continue;
 
-                    // Colisão vertical (chão/teto)
-                    if (player.x + player.width > tileX && player.x < tileX + tileSize &&
-                        player.y + player.height > tileY && player.y < tileY + tileSize) {
+                    const tx = c * tileSize;
+                    const ty = r * tileSize;
 
-                        if (tile === 1) { // Plataforma
-                            if (player.vy > 0 && player.y + player.height <= tileY + player.vy) {
-                                player.y = tileY - player.height;
-                                player.vy = 0;
-                                player.onGround = true;
-                            } else if (player.vy < 0 && player.y >= tileY + tileSize - player.vy) {
-                                player.y = tileY + tileSize;
-                                player.vy = 0;
+                    // Colisão com plataformas (tile 1)
+                    if (tile === 1) {
+                        // De cima (chão)
+                        if (player.vy > 0 &&
+                            player.y + player.height > ty &&
+                            player.y + player.height <= ty + player.vy &&
+                            player.x + player.width > tx &&
+                            player.x < tx + tileSize) {
+                            player.y = ty - player.height;
+                            player.vy = 0;
+                            player.onGround = true;
+                        }
+                        // De baixo (teto)
+                        else if (player.vy < 0 &&
+                                 player.y < ty + tileSize &&
+                                 player.y >= ty + tileSize + player.vy &&
+                                 player.x + player.width > tx &&
+                                 player.x < tx + tileSize) {
+                            player.y = ty + tileSize;
+                            player.vy = 0;
+                        }
+                        // Laterais
+                        else if (player.y + player.height > ty &&
+                                 player.y < ty + tileSize) {
+                            if (player.vx > 0 && player.x + player.width > tx && player.x + player.width <= tx + player.vx) {
+                                player.x = tx - player.width;
+                                player.vx = 0;
                             }
-                        } else if ((tile === 2 && !isLavaBoy) || (tile === 3 && isLavaBoy) || tile === 4) {
-                            // Morte
-                            resetLevel();
+                            else if (player.vx < 0 && player.x < tx + tileSize && player.x >= tx + tileSize + player.vx) {
+                                player.x = tx + tileSize;
+                                player.vx = 0;
+                            }
                         }
                     }
 
-                    // Colisão horizontal (paredes)
-                    if (player.y + player.height > tileY && player.y < tileY + tileSize &&
-                        player.x + player.width > tileX && player.x < tileX + tileSize) {
-
-                        if (tile === 1) {
-                            if (player.vx > 0 && player.x + player.width <= tileX + player.vx) {
-                                player.x = tileX - player.width;
-                            } else if (player.vx < 0 && player.x >= tileX + tileSize - player.vx) {
-                                player.x = tileX + tileSize;
-                            }
-                            player.vx = 0;
+                    // Morte
+                    if ((tile === 2 && !isLavaBoy) ||   // lava mata água
+                        (tile === 3 && isLavaBoy)  ||   // água mata fogo
+                        tile === 4) {                   // gosma mata ambos
+                        if (player.x + player.width > tx &&
+                            player.x < tx + tileSize &&
+                            player.y + player.height > ty &&
+                            player.y < ty + tileSize) {
+                            resetLevel();
                         }
                     }
                 }
             }
 
-            // Colisão com gemas
+            // Gemas
             const gemList = isLavaBoy ? gems.red : gems.blue;
             for (let i = gemList.length - 1; i >= 0; i--) {
-                const gem = gemList[i];
-                const gemX = gem.col * tileSize;
-                const gemY = gem.row * tileSize;
-                if (player.x + player.width > gemX && player.x < gemX + tileSize &&
-                    player.y + player.height > gemY && player.y < gemY + tileSize) {
-                    levelMap[gem.row][gem.col] = 0; // Remover gema
+                const g = gemList[i];
+                const gx = g.col * tileSize;
+                const gy = g.row * tileSize;
+                if (Math.abs(player.x + player.width/2 - (gx + tileSize/2)) < tileSize/1.5 &&
+                    Math.abs(player.y + player.height/2 - (gy + tileSize/2)) < tileSize/1.5) {
+                    levelMap[g.row][g.col] = 0;
                     gemList.splice(i, 1);
                     player.collectedGems++;
                 }
             }
 
-            // Colisão com portas
+            // Portas
             const door = isLavaBoy ? doors.lava : doors.water;
             if (door) {
-                const doorX = door.col * tileSize;
-                const doorY = door.row * tileSize;
-                if (player.x + player.width > doorX && player.x < doorX + tileSize &&
-                    player.y + player.height > doorY && player.y < doorY + tileSize) {
+                const dx = door.col * tileSize;
+                const dy = door.row * tileSize;
+                if (player.x + player.width > dx &&
+                    player.x < dx + tileSize &&
+                    player.y + player.height > dy &&
+                    player.y < dy + tileSize) {
                     checkWin();
                 }
             }
@@ -246,7 +274,6 @@
             // Limites da tela
             if (player.x < 0) player.x = 0;
             if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-            if (player.y < 0) player.y = 0;
             if (player.y + player.height > canvas.height) {
                 player.y = canvas.height - player.height;
                 player.vy = 0;
@@ -254,12 +281,21 @@
             }
         }
 
-        // Verificar vitória
         function checkWin() {
-            if (lavaBoy.x + lavaBoy.width > doors.lava.col * tileSize && lavaBoy.x < (doors.lava.col + 1) * tileSize &&
-                lavaBoy.y + lavaBoy.height > doors.lava.row * tileSize && lavaBoy.y < (doors.lava.row + 1) * tileSize &&
-                waterGirl.x + waterGirl.width > doors.water.col * tileSize && waterGirl.x < (doors.water.col + 1) * tileSize &&
-                waterGirl.y + waterGirl.height > doors.water.row * tileSize && waterGirl.y < (doors.water.row + 1) * tileSize) {
+            const dl = doors.lava;
+            const dw = doors.water;
+
+            const lavaAtDoor = lavaBoy.x + lavaBoy.width > dl.col * tileSize &&
+                               lavaBoy.x < (dl.col + 1) * tileSize &&
+                               lavaBoy.y + lavaBoy.height > dl.row * tileSize &&
+                               lavaBoy.y < (dl.row + 1) * tileSize;
+
+            const waterAtDoor = waterGirl.x + waterGirl.width > dw.col * tileSize &&
+                                waterGirl.x < (dw.col + 1) * tileSize &&
+                                waterGirl.y + waterGirl.height > dw.row * tileSize &&
+                                waterGirl.y < (dw.row + 1) * tileSize;
+
+            if (lavaAtDoor && waterAtDoor) {
                 if (currentLevel < levels.length - 1) {
                     currentLevel++;
                     initLevel();
@@ -270,109 +306,91 @@
             }
         }
 
-        // Resetar nível
         function resetLevel() {
-            alert('Um jogador morreu! Reiniciando nível.');
+            alert('Um dos jogadores morreu! Nível reiniciado.');
             initLevel();
         }
 
-        // Reiniciar jogo inteiro
         function restartGame() {
             currentLevel = 0;
             initLevel();
         }
 
-        // Renderizar mapa
         function renderMap() {
-            for (let row = 0; row < levelMap.length; row++) {
-                for (let col = 0; col < levelMap[row].length; col++) {
-                    const tile = levelMap[row][col];
-                    const x = col * tileSize;
-                    const y = row * tileSize;
+            for (let r = 0; r < levelMap.length; r++) {
+                for (let c = 0; c < levelMap[r].length; c++) {
+                    const t = levelMap[r][c];
+                    const x = c * tileSize;
+                    const y = r * tileSize;
 
-                    switch (tile) {
-                        case 1: // Plataforma
-                            ctx.fillStyle = '#888';
-                            ctx.fillRect(x, y, tileSize, tileSize);
-                            break;
-                        case 2: // Lava
-                            ctx.fillStyle = '#ff4500';
-                            ctx.fillRect(x, y, tileSize, tileSize);
-                            break;
-                        case 3: // Água
-                            ctx.fillStyle = '#00bfff';
-                            ctx.fillRect(x, y, tileSize, tileSize);
-                            break;
-                        case 4: // Gosma
-                            ctx.fillStyle = '#32cd32';
-                            ctx.fillRect(x, y, tileSize, tileSize);
-                            break;
-                        case 5: // Gema vermelha
-                            ctx.fillStyle = '#ff0000';
-                            ctx.beginPath();
-                            ctx.arc(x + tileSize/2, y + tileSize/2, tileSize/3, 0, Math.PI * 2);
-                            ctx.fill();
-                            break;
-                        case 6: // Gema azul
-                            ctx.fillStyle = '#0000ff';
-                            ctx.beginPath();
-                            ctx.arc(x + tileSize/2, y + tileSize/2, tileSize/3, 0, Math.PI * 2);
-                            ctx.fill();
-                            break;
-                        case 7: // Porta lava
-                            ctx.fillStyle = '#ff8c00';
-                            ctx.fillRect(x, y, tileSize, tileSize);
-                            ctx.fillStyle = '#fff';
-                            ctx.font = '20px Arial';
-                            ctx.fillText('Lava', x + 5, y + 25);
-                            break;
-                        case 8: // Porta água
-                            ctx.fillStyle = '#1e90ff';
-                            ctx.fillRect(x, y, tileSize, tileSize);
-                            ctx.fillStyle = '#fff';
-                            ctx.font = '20px Arial';
-                            ctx.fillText('Água', x + 5, y + 25);
-                            break;
+                    if (t === 1) {
+                        ctx.fillStyle = '#777';
+                        ctx.fillRect(x, y, tileSize, tileSize);
+                    }
+                    else if (t === 2) ctx.fillStyle = '#ff4500', ctx.fillRect(x,y,tileSize,tileSize);
+                    else if (t === 3) ctx.fillStyle = '#00bfff', ctx.fillRect(x,y,tileSize,tileSize);
+                    else if (t === 4) ctx.fillStyle = '#32cd32', ctx.fillRect(x,y,tileSize,tileSize);
+                    else if (t === 5) {
+                        ctx.fillStyle = '#ff4444';
+                        ctx.beginPath();
+                        ctx.arc(x + tileSize/2, y + tileSize/2, tileSize/3, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                    else if (t === 6) {
+                        ctx.fillStyle = '#4444ff';
+                        ctx.beginPath();
+                        ctx.arc(x + tileSize/2, y + tileSize/2, tileSize/3, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                    else if (t === 7) {
+                        ctx.fillStyle = '#ff8c00';
+                        ctx.fillRect(x, y, tileSize, tileSize);
+                        ctx.fillStyle = '#000';
+                        ctx.font = 'bold 16px Arial';
+                        ctx.fillText('Fogo', x+4, y+24);
+                    }
+                    else if (t === 8) {
+                        ctx.fillStyle = '#1e90ff';
+                        ctx.fillRect(x, y, tileSize, tileSize);
+                        ctx.fillStyle = '#000';
+                        ctx.font = 'bold 16px Arial';
+                        ctx.fillText('Água', x+4, y+24);
                     }
                 }
             }
         }
 
-        // Renderizar jogadores
         function renderPlayers() {
             // Lava Boy
-            ctx.fillStyle = '#ff4500';
+            ctx.fillStyle = '#ff5500';
             ctx.fillRect(lavaBoy.x, lavaBoy.y, lavaBoy.width, lavaBoy.height);
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = '#ffffff';
             ctx.font = '12px Arial';
-            ctx.fillText('Lava', lavaBoy.x + 5, lavaBoy.y + 20);
+            ctx.fillText('Lava', lavaBoy.x + 4, lavaBoy.y + 22);
 
             // Water Girl
-            ctx.fillStyle = '#00bfff';
+            ctx.fillStyle = '#00aaff';
             ctx.fillRect(waterGirl.x, waterGirl.y, waterGirl.width, waterGirl.height);
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = '#ffffff';
             ctx.font = '12px Arial';
-            ctx.fillText('Water', waterGirl.x + 5, waterGirl.y + 20);
+            ctx.fillText('Water', waterGirl.x + 4, waterGirl.y + 22);
         }
 
-        // Loop do jogo
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Atualizar jogadores
-            if (keys['ArrowLeft']) lavaBoy.vx = -moveSpeed;
-            else if (keys['ArrowRight']) lavaBoy.vx = moveSpeed;
-            else lavaBoy.vx = 0;
-
+            // Controles
+            lavaBoy.vx = 0;
+            if (keys['ArrowLeft'])  lavaBoy.vx = -moveSpeed;
+            if (keys['ArrowRight']) lavaBoy.vx = moveSpeed;
             if (keys['ArrowUp'] && lavaBoy.onGround) {
                 lavaBoy.vy = jumpStrength;
                 lavaBoy.onGround = false;
             }
 
+            waterGirl.vx = 0;
             if (keys['a']) waterGirl.vx = -moveSpeed;
-            else if (keys['d']) waterGirl.vx = moveSpeed;
-            else waterGirl.vx = 0;
-
+            if (keys['d']) waterGirl.vx = moveSpeed;
             if (keys['w'] && waterGirl.onGround) {
                 waterGirl.vy = jumpStrength;
                 waterGirl.onGround = false;
@@ -381,24 +399,18 @@
             updatePlayer(lavaBoy, true);
             updatePlayer(waterGirl, false);
 
-            // Renderizar
             renderMap();
             renderPlayers();
 
             requestAnimationFrame(gameLoop);
         }
 
-        // Eventos de teclado
-        window.addEventListener('keydown', (e) => {
+        window.addEventListener('keydown', e => {
             keys[e.key] = true;
-            if (e.key === 'r') resetLevel();
+            if (e.key.toLowerCase() === 'r') resetLevel();
         });
+        window.addEventListener('keyup', e => keys[e.key] = false);
 
-        window.addEventListener('keyup', (e) => {
-            keys[e.key] = false;
-        });
-
-        // Iniciar jogo
         initLevel();
         gameLoop();
     </script>
