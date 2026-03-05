@@ -1,204 +1,180 @@
+npm create vite@latest mario-phaser -- --template vanilla
+cd mario-phaser
+npm install
+
+# Instala Phaser 3 (versão mais recente)
+npm install phaser
+
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mini Mario Kart 8-bit - GitHub Pages</title>
+  <title>Super Mario HTML5 - Phaser 3</title>
   <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      background: #222;
-      font-family: Arial, Helvetica, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: #eee;
-    }
-    h1 {
-      margin: 10px;
-      font-size: 2.1rem;
-      text-shadow: 3px 3px 0 #e74c3c;
-    }
-    canvas {
-      image-rendering: pixelated;
-      border: 4px solid #444;
-      box-shadow: 0 0 30px rgba(0,0,0,0.8);
-      background: #0a3d62;
-    }
-    .info {
-      margin: 12px;
-      font-size: 1.1rem;
-      text-align: center;
-    }
-    .keys {
-      background: rgba(0,0,0,0.4);
-      padding: 8px 16px;
-      border-radius: 8px;
-      margin-top: 8px;
-    }
+    body { margin:0; background:#000; overflow:hidden; }
+    #game-container { margin: 0 auto; }
   </style>
 </head>
 <body>
-
-<h1>Mini Mario Kart 8-bit</h1>
-
-<canvas id="game" width="640" height="480"></canvas>
-
-<div class="info">
-  <div>Use as setas ou WASD para controlar</div>
-  <div class="keys">↑ / W = acelerar  ·  ↓ / S = frear  ·  ← / A = esquerda  ·  → / D = direita</div>
-  <div>Objetivo: ficar na pista o máximo de tempo possível!</div>
-</div>
-
-<script>
-// =============================================
-//    MINI MARIO KART 8-bit (top-down racer)
-// =============================================
-
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-
-const WIDTH = canvas.width;
-const HEIGHT = canvas.height;
-
-// Jogador (kart)
-const player = {
-  x: WIDTH/2,
-  y: HEIGHT * 0.75,
-  width: 32,
-  height: 48,
-  angle: 0,
-  speed: 0,
-  maxSpeed: 5.2,
-  accel: 0.18,
-  brake: 0.28,
-  turnSpeed: 0.06,
-  driftFactor: 0.92
-};
-
-// Teclas
-const keys = {};
-window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-window.addEventListener('keyup',   e => keys[e.key.toLowerCase()] = false);
-
-// Pista simples (faixas + bordas)
-function drawTrack() {
-  // gramado
-  ctx.fillStyle = '#1e8449';
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-  // asfalto principal
-  ctx.fillStyle = '#2f3640';
-  ctx.fillRect(80, 0, WIDTH-160, HEIGHT);
-
-  // linhas brancas centrais (dashed)
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 6;
-  ctx.setLineDash([40, 30]);
-  ctx.beginPath();
-  ctx.moveTo(WIDTH/2, 0);
-  ctx.lineTo(WIDTH/2, HEIGHT);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // bordas vermelhas + brancas
-  ctx.strokeStyle = '#c0392b';
-  ctx.lineWidth = 18;
-  ctx.strokeRect(70, 0, WIDTH-140, HEIGHT);
-
-  ctx.strokeStyle = 'white';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(80, 0, WIDTH-160, HEIGHT);
-}
-
-// Desenha o kart (estilo 8-bit bem simplificado)
-function drawKart() {
-  ctx.save();
-  ctx.translate(player.x, player.y);
-  ctx.rotate(player.angle);
-
-  // sombra
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  ctx.fillRect(-18, -10, 36, 24);
-
-  // corpo do kart (Mario vermelho clássico)
-  ctx.fillStyle = '#e74c3c';
-  ctx.fillRect(-16, -24, 32, 48);
-
-  // detalhes amarelos
-  ctx.fillStyle = '#f1c40f';
-  ctx.fillRect(-14, -20, 28, 12);
-  ctx.fillRect(-12, 8, 24, 12);
-
-  // rodas
-  ctx.fillStyle = '#2c3e50';
-  ctx.fillRect(-18, -22, 8, 12);
-  ctx.fillRect(10, -22, 8, 12);
-  ctx.fillRect(-18, 10, 8, 12);
-  ctx.fillRect(10, 10, 8, 12);
-
-  // olhinhos do Mario (muito fofos)
-  ctx.fillStyle = 'white';
-  ctx.fillRect(-10, -18, 6, 6);
-  ctx.fillRect(4, -18, 6, 6);
-  ctx.fillStyle = '#000';
-  ctx.fillRect(-8, -16, 4, 4);
-  ctx.fillRect(6, -16, 4, 4);
-
-  ctx.restore();
-}
-
-// Atualiza física bem simples + drift
-function update() {
-  // aceleração
-  if (keys['arrowup'] || keys['w']) {
-    player.speed = Math.min(player.speed + player.accel, player.maxSpeed);
-  }
-  // freio / ré
-  else if (keys['arrowdown'] || keys['s']) {
-    player.speed = Math.max(player.speed - player.brake, -player.maxSpeed * 0.6);
-  }
-  // atrito
-  else {
-    player.speed *= 0.97;
-  }
-
-  // virar (mais fácil quando está devagar)
-  const turn = player.turnSpeed * (1 - Math.abs(player.speed)/player.maxSpeed * 0.4);
-  
-  if (keys['arrowleft']  || keys['a']) player.angle -= turn * (player.speed > 0 ? 1 : -1);
-  if (keys['arrowright'] || keys['d']) player.angle += turn * (player.speed > 0 ? 1 : -1);
-
-  // movimento
-  player.x += Math.sin(player.angle) * player.speed;
-  player.y -= Math.cos(player.angle) * player.speed;
-
-  // paredes simples (limites da pista)
-  if (player.x < 100)  player.x = 100;
-  if (player.x > WIDTH-100) player.x = WIDTH-100;
-  if (player.y < 40)   player.y = 40;
-  if (player.y > HEIGHT-60) player.y = HEIGHT-60;
-
-  // desacelera bastante se bater na grama
-  if (player.x < 140 || player.x > WIDTH-140) {
-    player.speed *= 0.84;
-  }
-}
-
-function loop() {
-  ctx.clearRect(0,0,WIDTH,HEIGHT);
-
-  drawTrack();
-  update();
-  drawKart();
-
-  requestAnimationFrame(loop);
-}
-
-loop();
-
-</script>
+  <div id="game-container"></div>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
+
+import Phaser from 'phaser'
+
+import Boot      from './scenes/Boot.js'
+import Preloader from './scenes/Preloader.js'
+import Menu      from './scenes/Menu.js'
+import Game      from './scenes/Game.js'
+import GameOver  from './scenes/GameOver.js'
+
+const config = {
+  type: Phaser.AUTO,
+  parent: 'game-container',
+  pixelArt: true,           // importante para estilo retrô
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: 800,
+    height: 480               // proporção clássica 16:10 ou 800×600 também funciona
+  },
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { y: 850 },
+      debug: false              // mude para true para ver hitboxes
+    }
+  },
+  scene: [Boot, Preloader, Menu, Game, GameOver]
+}
+
+new Phaser.Game(config)
+
+export default class Player extends Phaser.Physics.Arcade.Sprite {
+  constructor(scene, x, y) {
+    super(scene, x, y, 'mario')
+    scene.add.existing(this)
+    scene.physics.add.existing(this)
+
+    this.setCollideWorldBounds(true)
+    this.setGravityY(850)
+    this.setDragX(400)          // deslize suave ao soltar tecla
+    this.body.setSize(14, 32)   // ajuste hitbox (depende do sprite)
+
+    this.createAnimations()
+  }
+
+  createAnimations() {
+    this.scene.anims.create({
+      key: 'run',
+      frames: this.scene.anims.generateFrameNumbers('mario', { start: 4, end: 7 }),
+      frameRate: 12,
+      repeat: -1
+    })
+
+    this.scene.anims.create({
+      key: 'idle',
+      frames: [{ key: 'mario', frame: 0 }],
+      frameRate: 10
+    })
+
+    this.scene.anims.create({
+      key: 'jump',
+      frames: [{ key: 'mario', frame: 10 }],
+      frameRate: 10
+    })
+  }
+
+  update(cursors) {
+    if (!this.body) return
+
+    // Movimento horizontal
+    if (cursors.left.isDown) {
+      this.setVelocityX(-180)
+      this.setFlipX(true)
+      if (this.body.onFloor()) this.anims.play('run', true)
+    } else if (cursors.right.isDown) {
+      this.setVelocityX(180)
+      this.setFlipX(false)
+      if (this.body.onFloor()) this.anims.play('run', true)
+    } else {
+      this.setVelocityX(this.body.velocity.x * 0.92) // atrito
+      if (this.body.onFloor()) this.anims.play('idle')
+    }
+
+    // Pulo (suporte a pulo variável)
+    if (Phaser.Input.Keyboard.JustDown(cursors.up) && this.body.onFloor()) {
+      this.setVelocityY(-420)
+      this.anims.play('jump')
+      // this.scene.sound.play('jump') // depois
+    }
+
+    // Pulo maior se segurar o botão
+    if (cursors.up.isDown && this.body.velocity.y < 0) {
+      this.body.velocity.y -= 8   // "jump higher" clássico
+    }
+  }
+}
+
+import Phaser from 'phaser'
+import Player from '../objects/Player.js'
+
+export default class Game extends Phaser.Scene {
+  constructor() {
+    super({ key: 'Game' })
+  }
+
+  create() {
+    this.cameras.main.setBackgroundColor('#6b88ff')
+
+    // Tilemap (você precisa criar no Tiled e exportar como JSON)
+    const map = this.make.tilemap({ key: 'level1' })
+    const tileset = map.addTilesetImage('tiles', 'tiles')
+
+    const platforms = map.createLayer('platforms', tileset, 0, 0)
+    platforms.setCollisionByExclusion(-1, true)
+
+    // Player
+    const spawnPoint = map.findObject('objects', obj => obj.name === 'spawn')
+    this.player = new Player(this, spawnPoint.x, spawnPoint.y)
+
+    // Colisão com chão
+    this.physics.add.collider(this.player, platforms)
+
+    // Camera segue o player
+    this.cameras.main.startFollow(this.player, true, 0.08, 0.08)
+    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels)
+
+    // Controles
+    this.cursors = this.input.keyboard.createCursorKeys()
+
+    // Moedas (exemplo simples)
+    this.coins = this.physics.add.group()
+    map.getObjectLayer('coins').objects.forEach(coin => {
+      const c = this.coins.create(coin.x, coin.y, 'items', 0)
+      c.body.allowGravity = false
+      c.body.immovable = true
+    })
+    this.physics.add.overlap(this.player, this.coins, (p, c) => {
+      c.destroy()
+      // this.sound.play('coin')
+      // this.score += 100
+    })
+  }
+
+  this.load.spritesheet('mario', 'assets/images/mario.png', { frameWidth: 32, frameHeight: 32 })
+this.load.image('tiles', 'assets/images/tiles.png')
+this.load.tilemapTiledJSON('level1', 'assets/maps/level1.json')
+this.load.image('background', 'assets/images/background.png')
+
+"homepage": "https://SEU-USUARIO.github.io/nome-do-repositorio/",
+"scripts": {
+  "build": "vite build",
+  "deploy": "gh-pages -d dist"
+}
+
+npm run build
+npm install -D gh-pages
+npm run deploy
