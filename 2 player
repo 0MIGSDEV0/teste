@@ -1,464 +1,365 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mini Mario Kart 8-bit - GitHub Pages</title>
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      background: #222;
-      font-family: Arial, Helvetica, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: #eee;
-    }
-    h1 {
-      margin: 10px;
-      font-size: 2.1rem;
-      text-shadow: 3px 3px 0 #e74c3c;
-    }
-    canvas {
-      image-rendering: pixelated;
-      border: 4px solid #444;
-      box-shadow: 0 0 30px rgba(0,0,0,0.8);
-      background: #0a3d62;
-    }
-    .info {
-      margin: 12px;
-      font-size: 1.1rem;
-      text-align: center;
-    }
-    .keys {
-      background: rgba(0,0,0,0.4);
-      padding: 8px 16px;
-      border-radius: 8px;
-      margin-top: 8px;
-    }
-  </style>
-</head>
-<body>
+// ================================================
+// MELHORIAS NAS ARTES (PIXEL ART AVANÇADO + ANIMAÇÕES)
+// ================================================
+// Adicione isso NO INÍCIO do <script>, após canvas.height:
+ctx.imageSmoothingEnabled = false; // Pixel art nítido
 
-<h1>🚗 Mini Mario Kart 8-bit 🚗</h1>
+// Adicione ao objeto player (depois de facingRight):
+player.animTime: 0,
+player.animFrame: 0,
+player.isWalking: false,
 
-<canvas id="game" width="640" height="480"></canvas>
-
-<div class="info">
-  <div>Use as setas ou WASD para controlar o Mario Kart!</div>
-  <div class="keys">↑ / W = acelerar  ·  ↓ / S = frear  ·  ← / A = esquerda  ·  → / D = direita</div>
-  <div>Objetivo: Percorra a maior distância possível evitando obstáculos (bananas/rochas) e outros karts!</div>
-  <div>Fique na pista para não perder velocidade! 💨</div>
-</div>
-
-<script>
-// =============================================
-//    MINI MARIO KART 8-bit - PISTA GRANDE COM CURVAS, OBSTÁCULOS E INIMIGOS!
-// =============================================
-
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-
-const WIDTH = canvas.width;
-const HEIGHT = canvas.height;
-const STRIP_H = 12;
-const PLAYER_Y = 380;
-const LANE_SEP = 80;
-const MAX_LANE = 1.2;
-
-// Jogador
-const player = {
-  steer: 0,
-  speed: 0,
-  maxSpeed: 5.2,
-  accel: 0.22,
-  decel: 0.35,
-  turnSpeed: 0.048,
-  returnSpeed: 0.102,
-  angle: 0
-};
-
-// Estado do jogo
-let scrollOffset = 0;
-let highScore = parseInt(localStorage.getItem('marioKartHigh') || '0');
-let nextAiSpawn = 300;
-let nextObsSpawn = 150;
-
-// Teclas
-const keys = {};
-window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-
-// Pista com curvas (sines múltiplos para S-curvas suaves)
-function getBorders(worldY) {
-  const curve1 = Math.sin(worldY * 0.0026) * 95;
-  const curve2 = Math.sin(worldY * 0.0017) * 65;
-  const curve3 = Math.sin(worldY * 0.0042) * 35;
-  const curves = curve1 + curve2 + curve3;
-  const centerX = WIDTH / 2 + curves;
-  const varWidth = 112 + Math.sin(worldY * 0.0031) * 20;
-  return {
-    center: centerX,
-    left: centerX - varWidth,
-    right: centerX + varWidth
-  };
+// ================================================
+// UPDATE DA ANIMAÇÃO (adicione no updatePlayer, após player.y += player.vy;)
+// ================================================
+player.isWalking = Math.abs(player.vx) > 0.1 && player.onGround;
+if (player.isWalking) {
+  player.animTime += 1/60;
+  player.animFrame = Math.floor(player.animTime * 12) % 4; // 4 frames de caminhada
+} else {
+  player.animFrame = 0;
+  player.animTime = 0;
 }
 
-// Desenha uma tira da pista (road + bordas)
-function drawStrip(sy, h, p1, p2) {
-  // Asfalto
-  ctx.fillStyle = '#2c3e50';
-  ctx.beginPath();
-  ctx.moveTo(Math.max(0, p1.left), sy);
-  ctx.lineTo(Math.min(WIDTH, p1.right), sy);
-  ctx.lineTo(Math.min(WIDTH, p2.right), sy + h);
-  ctx.lineTo(Math.max(0, p2.left), sy + h);
-  ctx.closePath();
-  ctx.fill();
-
-  // Bordas externas (vermelhas)
-  const rumbleOW = 15;
-  // Esquerda externa
-  const p1lo_l = p1.left - rumbleOW;
-  const p1lo_r = p1.left;
-  const p2lo_l = p2.left - rumbleOW;
-  const p2lo_r = p2.left;
-  ctx.fillStyle = '#a93226';
-  ctx.beginPath();
-  ctx.moveTo(Math.max(0, p1lo_l), sy);
-  ctx.lineTo(Math.min(WIDTH, p1lo_r), sy);
-  ctx.lineTo(Math.min(WIDTH, p2lo_r), sy + h);
-  ctx.lineTo(Math.max(0, p2lo_l), sy + h);
-  ctx.closePath();
-  ctx.fill();
-
-  // Direita externa
-  const p1ro_l = p1.right;
-  const p1ro_r = p1.right + rumbleOW;
-  const p2ro_l = p2.right;
-  const p2ro_r = p2.right + rumbleOW;
-  ctx.beginPath();
-  ctx.moveTo(Math.max(0, p1ro_l), sy);
-  ctx.lineTo(Math.min(WIDTH, p1ro_r), sy);
-  ctx.lineTo(Math.min(WIDTH, p2ro_r), sy + h);
-  ctx.lineTo(Math.max(0, p2ro_l), sy + h);
-  ctx.closePath();
-  ctx.fill();
-
-  // Bordas internas brancas
-  const rumbleIW = 7;
-  // Esquerda interna
-  const p1li_l = p1.left;
-  const p1li_r = p1.left + rumbleIW;
-  const p2li_l = p2.left;
-  const p2li_r = p2.left + rumbleIW;
-  ctx.fillStyle = '#ecf0f1';
-  ctx.beginPath();
-  ctx.moveTo(Math.max(0, p1li_l), sy);
-  ctx.lineTo(Math.min(WIDTH, p1li_r), sy);
-  ctx.lineTo(Math.min(WIDTH, p2li_r), sy + h);
-  ctx.lineTo(Math.max(0, p2li_l), sy + h);
-  ctx.closePath();
-  ctx.fill();
-
-  // Direita interna
-  const p1ri_l = p1.right - rumbleIW;
-  const p1ri_r = p1.right;
-  const p2ri_l = p2.right - rumbleIW;
-  const p2ri_r = p2.right;
-  ctx.beginPath();
-  ctx.moveTo(Math.max(0, p1ri_l), sy);
-  ctx.lineTo(Math.min(WIDTH, p1ri_r), sy);
-  ctx.lineTo(Math.min(WIDTH, p2ri_r), sy + h);
-  ctx.lineTo(Math.max(0, p2ri_l), sy + h);
-  ctx.closePath();
-  ctx.fill();
-
-  // Linha central tracejada (amarela)
-  if (Math.floor((scrollOffset + sy) / 36) % 2 === 0) {
-    const cw = 6;
-    const p1c_l = p1.center - cw / 2;
-    const p1c_r = p1.center + cw / 2;
-    const p2c_l = p2.center - cw / 2;
-    const p2c_r = p2.center + cw / 2;
-    ctx.fillStyle = '#f39c12';
-    ctx.beginPath();
-    ctx.moveTo(Math.max(0, p1c_l), sy);
-    ctx.lineTo(Math.min(WIDTH, p1c_r), sy);
-    ctx.lineTo(Math.min(WIDTH, p2c_r), sy + h);
-    ctx.lineTo(Math.max(0, p2c_l), sy + h);
-    ctx.closePath();
-    ctx.fill();
+// ================================================
+// PLATAFORMAS E CHÃO MELHORADOS (com padrão de tijolos!)
+// ================================================
+function drawGround(p) {
+  // Terra base
+  ctx.fillStyle = '#654321';
+  ctx.fillRect(p.x, p.y, p.w, p.h);
+  
+  // Padrão de tijolos na terra
+  const bw = 32, bh = 16;
+  for (let ix = 0; ix < p.w; ix += bw) {
+    for (let iy = 0; iy < p.h - 8; iy += bh) { // Deixa topo para grama
+      const color = ((ix / bw) + (iy / bh)) % 2 ? '#8B4513' : '#A0522D';
+      ctx.fillStyle = color;
+      ctx.fillRect(p.x + ix, p.y + iy, bw, bh);
+      
+      // Sombras nos tijolos
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fillRect(p.x + ix + 20, p.y + iy + 8, 12, 8);
+    }
+  }
+  
+  // Grama no topo (ondulada)
+  ctx.fillStyle = '#228B22';
+  ctx.fillRect(p.x, p.y - 12, p.w, 12);
+  ctx.fillStyle = '#32CD32';
+  for (let i = 0; i < p.w; i += 8) {
+    ctx.fillRect(p.x + i, p.y - 16, 8, 4);
   }
 }
 
-// Desenha a pista (grama + tiras)
-function drawTrack() {
-  // Grama de fundo
-  const grad = ctx.createLinearGradient(0, 0, 0, HEIGHT);
-  grad.addColorStop(0, '#27ae60');
-  grad.addColorStop(1, '#1e8449');
+function drawPlatform(p) {
+  // Base marrom
+  ctx.fillStyle = '#D2691E';
+  ctx.fillRect(p.x, p.y, p.w, p.h);
+  
+  // Tijolos com padrão offset
+  const bw = 28, bh = 14;
+  for (let ix = 0; ix < p.w; ix += bw) {
+    for (let iy = 0; iy < p.h; iy += bh) {
+      const offset = (iy / bh) % 2 * (bw / 2);
+      const color1 = '#CD853F';
+      const color2 = '#DEB887';
+      ctx.fillStyle = ((ix / bw) + (iy / bh)) % 2 ? color1 : color2;
+      ctx.fillRect(p.x + ix + offset, p.y + iy, bw, bh);
+      
+      // Detalhes de sombra
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(p.x + ix + offset + 18, p.y + iy + 6, 10, 8);
+    }
+  }
+  
+  // Borda superior brilhante
+  const grad = ctx.createLinearGradient(0, p.y, 0, p.y + 6);
+  grad.addColorStop(0, '#F5DEB3');
+  grad.addColorStop(1, '#D2B48C');
   ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-  // Tirinhas da pista
-  for (let sy = 0; sy < HEIGHT; sy += STRIP_H) {
-    const wy1 = scrollOffset + sy;
-    const wy2 = scrollOffset + sy + STRIP_H;
-    const p1 = getBorders(wy1);
-    const p2 = getBorders(wy2);
-    drawStrip(sy, STRIP_H, p1, p2);
-  }
-}
-
-// Desenha kart (Mario ou inimigo)
-function drawKart(x, y, angle, color = '#e74c3c', scale = 1, detailed = true) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(angle);
-  ctx.scale(scale, scale);
-
-  // Sombra
+  ctx.fillRect(p.x, p.y, p.w, 6);
+  
+  // Borda inferior sombra
   ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  ctx.fillRect(-14, 6, 28, 16);
-
-  // Corpo principal
-  ctx.fillStyle = color;
-  ctx.fillRect(-16, -24, 32, 48);
-
-  // Detalhes amarelos
-  ctx.fillStyle = '#f1c40f';
-  ctx.fillRect(-14, -20, 28, 14);
-  ctx.fillRect(-12, 8, 24, 12);
-
-  // Rodas
-  ctx.fillStyle = '#2c3e50';
-  ctx.fillRect(-18, -22, 8, 14);
-  ctx.fillRect(10, -22, 8, 14);
-  ctx.fillRect(-18, 8, 8, 14);
-  ctx.fillRect(10, 8, 8, 14);
-
-  // Olhos do Mario (só no player)
-  if (detailed) {
-    ctx.fillStyle = 'white';
-    ctx.fillRect(-10, -18, 6, 6);
-    ctx.fillRect(4, -18, 6, 6);
-    ctx.fillStyle = '#000';
-    ctx.fillRect(-8, -16, 4, 4);
-    ctx.fillRect(6, -16, 4, 4);
-  }
-
-  ctx.restore();
+  ctx.fillRect(p.x, p.y + p.h - 3, p.w, 3);
 }
 
-// Desenha objeto (obstáculo ou kart inimigo)
-function drawObject(obj, isKart = false) {
-  const sy = obj.worldY - scrollOffset;
-  if (sy < -50 || sy > HEIGHT + 50) return;
+// ================================================
+// MARIO ULTRA DETALHADO + ANIMAÇÃO DE PERNAS!
+// ================================================
+function drawMario() {
+  let px = player.x;
+  let py = player.y;
+  const flip = !player.facingRight;
+  
+  if (flip) {
+    ctx.save();
+    ctx.scale(-1, 1);
+    px = -px - player.width;
+  }
+  
+  const frame = player.animFrame;
+  const walking = player.isWalking;
+  const jumping = !player.onGround;
+  
+  // Pernas animadas (4 frames: 0=parado, 1-3=caminhando)
+  const legOffset = [0, 0, 4, -4]; // Movimento alternado
+  const shoeY = [0, 0, 2, -2];
+  
+  // Sapatos pretos (animados)
+  ctx.fillStyle = '#212121';
+  ctx.fillRect(px + 14 + legOffset[frame % 4], py + 48 + shoeY[frame % 4], 6, 10);
+  ctx.fillRect(px + 22 + legOffset[(frame + 2) % 4], py + 48 + shoeY[(frame + 2) % 4], 6, 10);
+  
+  // Pernas azuis
+  ctx.fillStyle = '#1976D2';
+  ctx.fillRect(px + 15 + legOffset[frame % 4], py + 38, 4, 12);
+  ctx.fillRect(px + 23 + legOffset[(frame + 2) % 4], py + 38, 4, 12);
+  
+  // Calças vermelhas (suspensórios)
+  ctx.fillStyle = '#D32F2F';
+  ctx.fillRect(px + 8, py + 20, 26, 24);
+  
+  // Botões amarelos
+  ctx.fillStyle = '#FFEB3B';
+  ctx.beginPath();
+  ctx.arc(px + 16, py + 32, 3, 0, Math.PI * 2);
+  ctx.arc(px + 24, py + 32, 3, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Braços (levantados se pulando)
+  const armY = jumping ? -4 : 0;
+  ctx.fillStyle = '#FBC02D'; // Mangas amarelas
+  ctx.fillRect(px + 4, py + 20 + armY, 6, 14);
+  ctx.fillRect(px + 32, py + 20 + armY, 6, 14);
+  ctx.fillStyle = '#FF9800'; // Mãos laranja
+  ctx.fillRect(px + 2, py + 28 + armY, 4, 6);
+  ctx.fillRect(px + 36, py + 28 + armY, 4, 6);
+  
+  // Torso superior vermelho
+  ctx.fillStyle = '#F44336';
+  ctx.fillRect(px + 12, py + 12, 18, 12);
+  
+  // Cabeça
+  ctx.fillStyle = '#FFCA28';
+  ctx.beginPath();
+  ctx.arc(px + 21, py + 8, 13, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Orelhas
+  ctx.fillStyle = '#FFCA28';
+  ctx.beginPath();
+  ctx.arc(px + 9, py + 8, 4, 0, Math.PI * 2);
+  ctx.arc(px + 33, py + 8, 4, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Boné vermelho com "M" branca
+  ctx.fillStyle = '#C62828';
+  ctx.fillRect(px + 8, py, 26, 12);
+  ctx.beginPath();
+  ctx.arc(px + 21, py + 2, 13, Math.PI, 0); // Curva do boné
+  ctx.fill();
+  
+  // "M" no boné
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 10px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('M', px + 21, py + 4);
+  
+  // Olhos (brilham se pulando)
+  const pupilSize = jumping ? 2 : 3;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(px + 15, py + 6, 5, 0, Math.PI * 2);
+  ctx.arc(px + 27, py + 6, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(px + 15, py + 6, pupilSize, 0, Math.PI * 2);
+  ctx.arc(px + 27, py + 6, pupilSize, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Sobrancelhas
+  ctx.fillStyle = '#000';
+  ctx.fillRect(px + 13, py + 2, 6, 2);
+  ctx.fillRect(px + 23, py + 2, 6, 2);
+  
+  // Bigode épico
+  ctx.fillStyle = '#8B4513';
+  ctx.beginPath();
+  ctx.ellipse(px + 19, py + 15, 12, 5, 0, 0, Math.PI);
+  ctx.fill();
+  
+  if (flip) ctx.restore();
+}
 
-  const borders = getBorders(obj.worldY);
-  const cx = borders.center + (obj.offset * LANE_SEP || laneOffsets[obj.lane] || 0);
+// ================================================
+// GOOMBA MELHORADO + ANIMAÇÃO DE "QUICAR"
+// ================================================
+function drawGoomba(e) {
+  const px = e.x;
+  const py = e.y;
+  const bob = Math.sin(time * 8 + px * 0.01) * 2; // Quica levemente
+  
+  // Corpo principal (elipse marrom)
+  ctx.fillStyle = '#8B4513';
+  ctx.beginPath();
+  ctx.ellipse(px + 20, py + 22 + bob, 20, 16, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Barriga inferior
+  ctx.fillStyle = '#A1887F';
+  ctx.beginPath();
+  ctx.ellipse(px + 20, py + 32 + bob, 16, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Pernas (2 pares, alternadas)
+  ctx.fillStyle = '#654321';
+  ctx.fillRect(px + 12, py + 34 + bob, 6, 8);
+  ctx.fillRect(px + 28, py + 34 + bob, 6, 8);
+  ctx.fillRect(px + 16, py + 36 + bob, 4, 6); // Traseiras
+  ctx.fillRect(px + 24, py + 36 + bob, 4, 6);
+  
+  // Olhos grandes e expressivos
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(px + 13, py + 16 + bob, 7, 0, Math.PI * 2);
+  ctx.arc(px + 27, py + 16 + bob, 7, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.fillStyle = '#000000';
+  ctx.beginPath();
+  ctx.arc(px + 13, py + 16 + bob, 4, 0, Math.PI * 2);
+  ctx.arc(px + 27, py + 16 + bob, 4, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Pupilas (movem com vx)
+  const pupilX = e.vx > 0 ? 2 : -2;
+  ctx.fillStyle = '#333';
+  ctx.beginPath();
+  ctx.arc(px + 13 + pupilX, py + 16 + bob, 2, 0, Math.PI * 2);
+  ctx.arc(px + 27 + pupilX, py + 16 + bob, 2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Dentes zangados
+  ctx.fillStyle = '#FFF';
+  ctx.fillRect(px + 18, py + 26 + bob, 4, 3);
+  ctx.fillRect(px + 22, py + 26 + bob, 4, 3);
+  
+  // Sobrancelhas
+  ctx.fillStyle = '#000';
+  ctx.fillRect(px + 9, py + 10 + bob, 10, 3);
+  ctx.fillRect(px + 25, py + 10 + bob, 10, 3);
+}
 
-  ctx.save();
-  ctx.translate(cx, sy);
+// ================================================
+// BANDEIRA ANIMADA (desce quando tocada)
+// ================================================
+// Adicione global: let flagPoleLowered = false;
+let flagPoleLowered = false; // No initCurrentLevel: flagPoleLowered = false;
 
-  if (isKart) {
-    drawKart(0, 0, obj.angle || 0, obj.color, 0.78, false);
-  } else if (obj.type === 'banana') {
-    ctx.fillStyle = '#f39c12';
-    ctx.fillRect(-10, -14, 20, 28);
-    ctx.fillStyle = '#e67e22';
-    ctx.fillRect(-6, -14, 12, 8);
-  } else { // rock
-    ctx.fillStyle = '#95a5a6';
+// No checkWin(), antes de gameState = 'levelcomplete':
+if (!flagPoleLowered) {
+  flagPoleLowered = true;
+}
+
+// drawFlag melhorada:
+function drawFlag(x, groundY) {
+  const poleX = x + 20;
+  const poleHeight = flagPoleLowered ? 120 : 220;
+  
+  // Poste (anima descendo)
+  ctx.fillStyle = '#4A4A4A';
+  ctx.fillRect(poleX - 3, groundY - poleHeight, 6, poleHeight);
+  
+  // Suporte superior
+  ctx.fillStyle = '#666';
+  ctx.fillRect(poleX - 15, groundY - poleHeight - 8, 30, 8);
+  
+  // Bandeira vermelha (onda)
+  ctx.fillStyle = '#D32F2F';
+  const wave = Math.sin(time * 10) * 3;
+  ctx.beginPath();
+  ctx.moveTo(poleX, groundY - poleHeight + 10);
+  ctx.quadraticCurveTo(poleX + 30 + wave, groundY - poleHeight + 15, poleX + 60, groundY - poleHeight + 25);
+  ctx.quadraticCurveTo(poleX + 40 + wave, groundY - poleHeight + 35, poleX, groundY - poleHeight + 50);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Estrela branca no topo
+  if (!flagPoleLowered) {
+    ctx.fillStyle = '#FFD700';
     ctx.beginPath();
-    ctx.moveTo(0, -18);
-    ctx.lineTo(-15, 8);
-    ctx.lineTo(15, 8);
+    ctx.moveTo(poleX + 5, groundY - poleHeight - 15);
+    ctx.lineTo(poleX + 10, groundY - poleHeight - 25);
+    ctx.lineTo(poleX + 15, groundY - poleHeight - 18);
+    ctx.lineTo(poleX + 12, groundY - poleHeight - 10);
+    ctx.lineTo(poleX + 8, groundY - poleHeight - 10);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#7f8c8d';
-    ctx.beginPath();
-    ctx.moveTo(0, -12);
-    ctx.lineTo(-10, 4);
-    ctx.lineTo(10, 4);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  ctx.restore();
-}
-
-const laneOffsets = [-75, 0, 75];
-
-// Arrays de objetos
-let opponents = [];
-let obstacles = [];
-
-// Spawn inimigo
-function spawnOpponent() {
-  const newY = scrollOffset + HEIGHT + 250 + Math.random() * 350;
-  const lane = Math.floor(Math.random() * 3);
-  const aiSpeeds = [3.9, 4.1, 4.0, 4.2];
-  opponents.push({
-    worldY: newY,
-    lane: lane,
-    color: ['#3498db', '#2ecc71', '#e67e22'][lane],
-    aiSpeed: aiSpeeds[Math.floor(Math.random() * aiSpeeds.length)]
-  });
-}
-
-// Spawn obstáculo
-function spawnObstacle() {
-  const newY = scrollOffset + HEIGHT + 150 + Math.random() * 500;
-  const isRock = Math.random() < 0.38;
-  let offset, type, width = 28;
-  if (isRock) {
-    type = 'rock';
-    const side = Math.random() < 0.5 ? -1 : 1;
-    offset = side * 1.35;
-    width = 42;
-  } else {
-    type = 'banana';
-    const laneBias = Math.floor(Math.random() * 3) - 1; // -1,0,1
-    offset = laneBias * 0.7 + (Math.random() - 0.5) * 0.3;
-  }
-  obstacles.push({ worldY: newY, offset, type, width });
-}
-
-// Update (física, input, spawns, colisões)
-function update() {
-  // Input
-  const turningLeft = keys['a'] || keys['arrowleft'];
-  const turningRight = keys['d'] || keys['arrowright'];
-  const accelerating = keys['w'] || keys['arrowup'];
-  const braking = keys['s'] || keys['arrowdown'];
-
-  if (turningLeft) player.steer = Math.max(player.steer - player.turnSpeed, -MAX_LANE);
-  if (turningRight) player.steer = Math.min(player.steer + player.turnSpeed, MAX_LANE);
-  else player.steer += (0 - player.steer) * player.returnSpeed;
-
-  if (accelerating) player.speed = Math.min(player.speed + player.accel, player.maxSpeed);
-  else if (braking) player.speed = Math.max(player.speed - player.decel, -player.maxSpeed * 0.5);
-  else player.speed *= 0.965;
-
-  // Posição do player na pista
-  const playerWorldY = scrollOffset + PLAYER_Y;
-  const pBorders = getBorders(playerWorldY);
-  player.screenX = pBorders.center + player.steer * LANE_SEP;
-  player.angle = player.steer * 0.24;
-
-  // Grama desacelera
-  const lanePos = player.steer;
-  if (Math.abs(lanePos) > 1.05) {
-    player.speed *= 0.82;
-  }
-
-  // Scroll
-  scrollOffset += player.speed;
-
-  // Update inimigos
-  for (let i = opponents.length - 1; i >= 0; i--) {
-    const opp = opponents[i];
-    opp.worldY += opp.aiSpeed;
-    const osy = opp.worldY - scrollOffset;
-    if (osy > HEIGHT + 100 || osy < -100) {
-      opponents.splice(i, 1);
-      continue;
-    }
-    // Colisão com inimigo
-    const osx = getBorders(opp.worldY).center + laneOffsets[opp.lane];
-    if (Math.abs(osy - PLAYER_Y) < 50 && Math.abs(player.screenX - osx) < 38) {
-      player.speed *= 0.74;
-      player.steer *= -0.45;
-    }
-  }
-
-  // Update obstáculos (estáticos no mundo)
-  for (let i = obstacles.length - 1; i >= 0; i--) {
-    const obs = obstacles[i];
-    const osy = obs.worldY - scrollOffset;
-    if (osy > HEIGHT + 100 || osy < -100) {
-      obstacles.splice(i, 1);
-      continue;
-    }
-    // Colisão com obstáculo
-    const borders = getBorders(obs.worldY);
-    const osx = borders.center + obs.offset * LANE_SEP;
-    if (Math.abs(osy - PLAYER_Y) < 45 && Math.abs(player.screenX - osx) < 35) {
-      if (obs.type === 'banana') {
-        player.speed *= 0.68;
-        player.steer = 0;
-        obstacles.splice(i, 1); // Remove banana
-      } else { // rock
-        player.speed *= 0.56;
-      }
-    }
-  }
-
-  // Spawn inimigos
-  if (opponents.length < 6 && scrollOffset > nextAiSpawn) {
-    spawnOpponent();
-    nextAiSpawn = scrollOffset + 380 + Math.random() * 280;
-  }
-
-  // Spawn obstáculos
-  if (scrollOffset > nextObsSpawn) {
-    spawnObstacle();
-    nextObsSpawn = scrollOffset + 320 + Math.random() * 420;
-  }
-
-  // Highscore
-  const currentDist = Math.floor(scrollOffset / 10);
-  if (currentDist > highScore) {
-    highScore = currentDist;
-    localStorage.setItem('marioKartHigh', highScore);
   }
 }
 
-// Desenha UI
+// ================================================
+// UI E TELAS FINAIS MELHORADAS (com bordas e sombras)
+// ================================================
 function drawUI() {
-  ctx.fillStyle = 'rgba(0,0,0,0.7)';
-  ctx.fillRect(10, 10, 300, 90);
-
-  ctx.fillStyle = '#fff';
+  // Fundo semi-transparente
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.fillRect(20, 20, 200, 60);
+  
+  ctx.fillStyle = '#000';
   ctx.font = 'bold 28px Arial';
   ctx.textAlign = 'left';
-  ctx.fillText(`Distância: ${Math.floor(scrollOffset / 10)}m`, 25, 42);
-  ctx.fillText(`Velocidade: ${Math.floor(player.speed * 13)} km/h`, 25, 74);
-
-  ctx.font = 'bold 24px Arial';
-  ctx.fillStyle = highScore === Math.floor(scrollOffset / 10) ? '#f1c40f' : '#bdc3c7';
-  ctx.fillText(`Melhor: ${highScore}m`, 25, 105);
+  ctx.fillText(`Fase ${currentLevel + 1}`, 35, 52);
+  ctx.fillText(`Tempo: ${Math.floor(time)}s`, 35, 82);
+  
+  // Vidas? (adicione player.lives = 3; e desenhe corações)
 }
 
-// Loop principal
-function loop() {
-  update();
-
-  ctx.clearRect(0, 0, WIDTH, HEIGHT);
-  drawTrack();
-
-  // Desenha inimigos e obstáculos
-  opponents.forEach(opp => drawObject(opp, true));
-  obstacles.forEach(obs => drawObject(obs));
-
-  // Player
-  drawKart(player.screenX, PLAYER_Y, player.angle, '#e74c3c', 1, true);
-
-  drawUI();
-
-  requestAnimationFrame(loop);
+function drawGameOver() {
+  ctx.fillStyle = 'rgba(139,0,0,0.8)';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  
+  ctx.fillStyle = '#FF4444';
+  ctx.font = 'bold 100px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('GAME', canvasWidth/2, canvasHeight/2 - 30);
+  ctx.fillText('OVER', canvasWidth/2, canvasHeight/2 + 60);
+  
+  ctx.font = 'bold 32px Arial';
+  ctx.fillStyle = '#FFF';
+  ctx.fillText('💀 Reiniciando...', canvasWidth/2, canvasHeight/2 + 120);
 }
 
-// Inicia spawns iniciais
-for (let i = 0; i < 4; i++) spawnOpponent();
-for (let i = 0; i < 2; i++) spawnObstacle();
+function drawLevelComplete() {
+  ctx.fillStyle = 'rgba(0,128,0,0.7)';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  
+  ctx.fillStyle = '#4CAF50';
+  ctx.font = 'bold 80px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('FASE', canvasWidth/2, canvasHeight/2 - 20);
+  ctx.fillText('COMPLETA!', canvasWidth/2, canvasHeight/2 + 50);
+  
+  ctx.font = 'bold 36px Arial';
+  ctx.fillStyle = '#FFD700';
+  ctx.fillText('⭐ Próxima em 2s!', canvasWidth/2, canvasHeight/2 + 120);
+}
 
-loop();
-
-</script>
-</body>
-</html>
+function drawWin() {
+  ctx.fillStyle = 'rgba(255,215,0,0.8)';
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 110px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('VOCÊ', canvasWidth/2, canvasHeight/2 - 40);
+  ctx.fillText('VENCEU!', canvasWidth/2, canvasHeight/2 + 60);
+  
+  ctx.font = 'bold 42px Arial';
+  ctx.fillStyle = '#000';
+  ctx.fillText(`🏆 ${Math.floor(time)}s`, canvasWidth/2, canvasHeight/2 + 140);
+}
