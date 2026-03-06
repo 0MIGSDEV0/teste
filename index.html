@@ -3,132 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pac-Man Pro</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Olá Mundo Estilizado</title>
+    <style>
+        /* O CSS começa aqui */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            color: #2563eb;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #64748b;
+        }
+    </style>
 </head>
 <body>
-    <div class="game-container">
-        <div id="ui">Pontos: <span id="score">0</span></div>
-        <div id="game-board">
-            <div id="pacman"></div>
-            <div id="ghost" class="ghost"></div>
-        </div>
+
+    <div class="card">
+        <h1>Olá, Mundo! 🚀</h1>
+        <p>Este é o meu primeiro código com estilo CSS.</p>
     </div>
-    <script src="script.js"></script>
+
 </body>
 </html>
-2. CSS (Estilização e Animações)
-Adicionamos o visual clássico: Pac-Man com boca, pastilhas brilhantes e o fantasma.
-
-CSS
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { 
-    display: flex; justify-content: center; align-items: center; 
-    height: 100vh; background-color: #111; font-family: 'Courier New', Courier, monospace;
-}
-
-.game-container { text-align: center; }
-#ui { color: yellow; font-size: 24px; margin-bottom: 10px; }
-
-#game-board {
-    width: 400px; height: 400px; background-color: #000;
-    position: relative; border: 4px solid #2222ff; border-radius: 8px;
-    overflow: hidden;
-}
-
-/* Pac-Man com formato de pizza */
-#pacman {
-    width: 30px; height: 30px; background-color: yellow;
-    border-radius: 50%; position: absolute;
-    clip-path: polygon(100% 0%, 100% 100%, 50% 50%, 100% 100%, 100% 0%);
-    transition: left 0.1s, top 0.1s, transform 0.1s;
-    z-index: 10;
-}
-
-/* Pastilhas */
-.dot {
-    width: 8px; height: 8px; background-color: #ffb8ae;
-    border-radius: 50%; position: absolute; transform: translate(11px, 11px);
-}
-
-/* Fantasma */
-.ghost {
-    width: 30px; height: 30px; background-color: red;
-    position: absolute; border-radius: 15px 15px 0 0;
-    transition: all 0.2s linear;
-}
-3. JavaScript (Lógica Completa)
-Aqui injetamos a inteligência: criação automática de pastilhas, detecção de colisão e o movimento do fantasma.
-
-JavaScript
-const board = document.getElementById("game-board");
-const pacman = document.getElementById("pacman");
-const ghost = document.getElementById("ghost");
-const scoreElement = document.getElementById("score");
-
-let pacmanX = 0, pacmanY = 0;
-let ghostX = 360, ghostY = 360;
-let score = 0;
-const step = 40; // Tamanho da grade
-
-// 1. Gerar pastilhas no mapa
-function createDots() {
-    for (let y = 0; y < 400; y += step) {
-        for (let x = 0; x < 400; x += step) {
-            if (x === 0 && y === 0) continue; // Pula a posição inicial do Pac-Man
-            let dot = document.createElement("div");
-            dot.className = "dot";
-            dot.style.left = x + "px";
-            dot.style.top = y + "px";
-            board.appendChild(dot);
-        }
-    }
-}
-
-// 2. Movimento do Pac-Man e Colisões
-document.addEventListener("keydown", (e) => {
-    let oldX = pacmanX;
-    let oldY = pacmanY;
-
-    if (e.key === "ArrowUp" && pacmanY > 0) { pacmanY -= step; pacman.style.transform = "rotate(270deg)"; }
-    if (e.key === "ArrowDown" && pacmanY < 360) { pacmanY += step; pacman.style.transform = "rotate(90deg)"; }
-    if (e.key === "ArrowLeft" && pacmanX > 0) { pacmanX -= step; pacman.style.transform = "rotate(180deg)"; }
-    if (e.key === "ArrowRight" && pacmanX < 360) { pacmanX += step; pacman.style.transform = "rotate(0deg)"; }
-
-    pacman.style.left = pacmanX + "px";
-    pacman.style.top = pacmanY + "px";
-
-    checkEat();
-});
-
-// 3. Sistema de Comer
-function checkEat() {
-    const dots = document.querySelectorAll(".dot");
-    dots.forEach(dot => {
-        if (parseInt(dot.style.left) === pacmanX && parseInt(dot.style.top) === pacmanY) {
-            dot.remove();
-            score += 10;
-            scoreElement.innerText = score;
-        }
-    });
-}
-
-// 4. Inteligência do Fantasma (Perseguição básica)
-function moveGhost() {
-    if (ghostX < pacmanX) ghostX += step;
-    else if (ghostX > pacmanX) ghostX -= step;
-    else if (ghostY < pacmanY) ghostY += step;
-    else if (ghostY > pacmanY) ghostY -= step;
-
-    ghost.style.left = ghostX + "px";
-    ghost.style.top = ghostY + "px";
-
-    if (ghostX === pacmanX && ghostY === pacmanY) {
-        alert("GAME OVER! Pontuação: " + score);
-        location.reload();
-    }
-}
-
-// Inicialização
-createDots();
-setInterval(moveGhost, 400); // Fantasma se move a cada 0.4s
