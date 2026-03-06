@@ -1,239 +1,134 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Snake - Estilo Google Doodle</title>
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      background: #1a1a2e;
-      font-family: Arial, Helvetica, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: #e0e0e0;
-    }
-
-    h1 {
-      margin: 10px;
-      color: #00d4ff;
-      text-shadow: 0 0 10px #00d4ff88;
-    }
-
-    #game-container {
-      position: relative;
-    }
-
-    canvas {
-      background: #0f0f23;
-      border: 2px solid #444;
-      box-shadow: 0 0 30px rgba(0, 212, 255, 0.15);
-      image-rendering: pixelated;
-    }
-
-    #score {
-      font-size: 2.2rem;
-      margin: 8px;
-      color: #39ff14;
-      text-shadow: 0 0 10px #39ff1488;
-    }
-
-    .instructions {
-      margin-top: 15px;
-      font-size: 0.95rem;
-      color: #aaa;
-      text-align: center;
-      line-height: 1.5;
-    }
-
-    button {
-      margin-top: 15px;
-      padding: 12px 28px;
-      font-size: 1.1rem;
-      background: #00d4ff;
-      color: #000;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    button:hover {
-      background: #00b8e0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pac-Man Pro</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <h1>🐍 Snake</h1>
-  <div id="score">Pontos: 0</div>
-
-  <div id="game-container">
-    <canvas id="game" width="400" height="400"></canvas>
-  </div>
-
-  <div class="instructions">
-    Use as setas ↑ ↓ ← → ou WASD<br>
-    Pressione ESPAÇO ou clique para começar/reiniciar
-  </div>
-
-  <button onclick="startGame()">Jogar / Reiniciar</button>
-
-<script>
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const scoreElement = document.getElementById('score');
-
-  const GRID_SIZE = 20;
-  const TILE_COUNT = canvas.width / GRID_SIZE;
-
-  let snake = [{ x: 10, y: 10 }];
-  let food = { x: 15, y: 15 };
-  let dx = 0;
-  let dy = 0;
-  let score = 0;
-  let gameLoop;
-  let gameRunning = false;
-
-  function draw() {
-    // fundo
-    ctx.fillStyle = '#0f0f23';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // cobra
-    ctx.fillStyle = '#39ff14';
-    snake.forEach((segment, index) => {
-      if (index === 0) {
-        ctx.fillStyle = '#00ff9d'; // cabeça mais clara
-      } else {
-        ctx.fillStyle = '#39ff14';
-      }
-      ctx.fillRect(segment.x * GRID_SIZE, segment.y * GRID_SIZE, GRID_SIZE - 1, GRID_SIZE - 1);
-    });
-
-    // comida (maçã estilo google)
-    ctx.fillStyle = '#ff3366';
-    ctx.beginPath();
-    ctx.arc(
-      food.x * GRID_SIZE + GRID_SIZE/2,
-      food.y * GRID_SIZE + GRID_SIZE/2,
-      GRID_SIZE/2 - 2,
-      0, Math.PI*2
-    );
-    ctx.fill();
-
-    // brilho na comida
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.beginPath();
-    ctx.arc(
-      food.x * GRID_SIZE + GRID_SIZE/3,
-      food.y * GRID_SIZE + GRID_SIZE/4,
-      GRID_SIZE/6,
-      0, Math.PI*2
-    );
-    ctx.fill();
-  }
-
-  function update() {
-    if (!gameRunning) return;
-
-    // nova cabeça
-    const head = { x: snake[0].x + dx, y: snake[0].y + dy };
-
-    // colisão com parede
-    if (head.x < 0 || head.x >= TILE_COUNT || head.y < 0 || head.y >= TILE_COUNT) {
-      gameOver();
-      return;
-    }
-
-    // colisão com o próprio corpo
-    if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-      gameOver();
-      return;
-    }
-
-    snake.unshift(head);
-
-    // comeu a comida?
-    if (head.x === food.x && head.y === food.y) {
-      score += 10;
-      scoreElement.textContent = `Pontos: ${score}`;
-      generateFood();
-    } else {
-      snake.pop();
-    }
-
-    draw();
-  }
-
-  function generateFood() {
-    food.x = Math.floor(Math.random() * TILE_COUNT);
-    food.y = Math.floor(Math.random() * TILE_COUNT);
-
-    // evita gerar comida em cima da cobra
-    if (snake.some(s => s.x === food.x && s.y === food.y)) {
-      generateFood();
-    }
-  }
-
-  function gameOver() {
-    clearInterval(gameLoop);
-    gameRunning = false;
-    alert(`Game Over!\nSua pontuação: ${score}`);
-  }
-
-  function startGame() {
-    if (gameRunning) {
-      clearInterval(gameLoop);
-    }
-
-    snake = [{ x: 10, y: 10 }];
-    dx = 1;
-    dy = 0;
-    score = 0;
-    scoreElement.textContent = 'Pontos: 0';
-    generateFood();
-    gameRunning = true;
-
-    gameLoop = setInterval(update, 120); // velocidade – menor = mais rápido
-  }
-
-  // Controles
-  document.addEventListener('keydown', e => {
-    if (!gameRunning && (e.key === ' ' || e.key === 'Enter')) {
-      startGame();
-      return;
-    }
-
-    switch(e.key.toLowerCase()) {
-      case 'arrowup':
-      case 'w':
-        if (dy === 0) { dx = 0; dy = -1; }
-        break;
-      case 'arrowdown':
-      case 's':
-        if (dy === 0) { dx = 0; dy = 1; }
-        break;
-      case 'arrowleft':
-      case 'a':
-        if (dx === 0) { dx = -1; dy = 0; }
-        break;
-      case 'arrowright':
-      case 'd':
-        if (dx === 0) { dx = 1; dy = 0; }
-        break;
-      case ' ':
-        if (!gameRunning) startGame();
-        break;
-    }
-  });
-
-  // desenho inicial
-  draw();
-</script>
-
+    <div class="game-container">
+        <div id="ui">Pontos: <span id="score">0</span></div>
+        <div id="game-board">
+            <div id="pacman"></div>
+            <div id="ghost" class="ghost"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
+2. CSS (Estilização e Animações)
+Adicionamos o visual clássico: Pac-Man com boca, pastilhas brilhantes e o fantasma.
+
+CSS
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { 
+    display: flex; justify-content: center; align-items: center; 
+    height: 100vh; background-color: #111; font-family: 'Courier New', Courier, monospace;
+}
+
+.game-container { text-align: center; }
+#ui { color: yellow; font-size: 24px; margin-bottom: 10px; }
+
+#game-board {
+    width: 400px; height: 400px; background-color: #000;
+    position: relative; border: 4px solid #2222ff; border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Pac-Man com formato de pizza */
+#pacman {
+    width: 30px; height: 30px; background-color: yellow;
+    border-radius: 50%; position: absolute;
+    clip-path: polygon(100% 0%, 100% 100%, 50% 50%, 100% 100%, 100% 0%);
+    transition: left 0.1s, top 0.1s, transform 0.1s;
+    z-index: 10;
+}
+
+/* Pastilhas */
+.dot {
+    width: 8px; height: 8px; background-color: #ffb8ae;
+    border-radius: 50%; position: absolute; transform: translate(11px, 11px);
+}
+
+/* Fantasma */
+.ghost {
+    width: 30px; height: 30px; background-color: red;
+    position: absolute; border-radius: 15px 15px 0 0;
+    transition: all 0.2s linear;
+}
+3. JavaScript (Lógica Completa)
+Aqui injetamos a inteligência: criação automática de pastilhas, detecção de colisão e o movimento do fantasma.
+
+JavaScript
+const board = document.getElementById("game-board");
+const pacman = document.getElementById("pacman");
+const ghost = document.getElementById("ghost");
+const scoreElement = document.getElementById("score");
+
+let pacmanX = 0, pacmanY = 0;
+let ghostX = 360, ghostY = 360;
+let score = 0;
+const step = 40; // Tamanho da grade
+
+// 1. Gerar pastilhas no mapa
+function createDots() {
+    for (let y = 0; y < 400; y += step) {
+        for (let x = 0; x < 400; x += step) {
+            if (x === 0 && y === 0) continue; // Pula a posição inicial do Pac-Man
+            let dot = document.createElement("div");
+            dot.className = "dot";
+            dot.style.left = x + "px";
+            dot.style.top = y + "px";
+            board.appendChild(dot);
+        }
+    }
+}
+
+// 2. Movimento do Pac-Man e Colisões
+document.addEventListener("keydown", (e) => {
+    let oldX = pacmanX;
+    let oldY = pacmanY;
+
+    if (e.key === "ArrowUp" && pacmanY > 0) { pacmanY -= step; pacman.style.transform = "rotate(270deg)"; }
+    if (e.key === "ArrowDown" && pacmanY < 360) { pacmanY += step; pacman.style.transform = "rotate(90deg)"; }
+    if (e.key === "ArrowLeft" && pacmanX > 0) { pacmanX -= step; pacman.style.transform = "rotate(180deg)"; }
+    if (e.key === "ArrowRight" && pacmanX < 360) { pacmanX += step; pacman.style.transform = "rotate(0deg)"; }
+
+    pacman.style.left = pacmanX + "px";
+    pacman.style.top = pacmanY + "px";
+
+    checkEat();
+});
+
+// 3. Sistema de Comer
+function checkEat() {
+    const dots = document.querySelectorAll(".dot");
+    dots.forEach(dot => {
+        if (parseInt(dot.style.left) === pacmanX && parseInt(dot.style.top) === pacmanY) {
+            dot.remove();
+            score += 10;
+            scoreElement.innerText = score;
+        }
+    });
+}
+
+// 4. Inteligência do Fantasma (Perseguição básica)
+function moveGhost() {
+    if (ghostX < pacmanX) ghostX += step;
+    else if (ghostX > pacmanX) ghostX -= step;
+    else if (ghostY < pacmanY) ghostY += step;
+    else if (ghostY > pacmanY) ghostY -= step;
+
+    ghost.style.left = ghostX + "px";
+    ghost.style.top = ghostY + "px";
+
+    if (ghostX === pacmanX && ghostY === pacmanY) {
+        alert("GAME OVER! Pontuação: " + score);
+        location.reload();
+    }
+}
+
+// Inicialização
+createDots();
+setInterval(moveGhost, 400); // Fantasma se move a cada 0.4s
