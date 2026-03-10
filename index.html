@@ -14,11 +14,12 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: black;
+            background: #111;
             color: #E0D0FF;
             overflow-x: hidden;
             scroll-behavior: smooth;
             position: relative;
+            padding-bottom: 100px; /* Espaço extra para o footer */
         }
 
         /* Fundo animado de estrelas */
@@ -31,7 +32,7 @@
             height: 200%;
             background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat;
             background-size: 200px 200px;
-            animation: starMove 100s linear infinite;
+            animation: starMove 120s linear infinite;
             z-index: -1;
         }
 
@@ -43,32 +44,34 @@
         a {
             color: #BB88FF;
             text-decoration: none;
-            transition: color 0.3s;
+            transition: color 0.3s, transform 0.3s;
         }
 
         a:hover {
             color: #FFAAFF;
+            transform: scale(1.05);
         }
 
         /* Header */
         header {
             text-align: center;
-            padding: 80px 20px;
+            padding: 100px 20px;
             background: linear-gradient(135deg, #4B0082, #800080);
             position: relative;
             overflow: hidden;
+            border-bottom: 5px solid #BB88FF;
         }
 
         header h1 {
-            font-size: 5rem;
+            font-size: 6rem;
             color: #FFFFFF;
-            text-shadow: 0 0 20px #BB88FF;
+            text-shadow: 0 0 30px #BB88FF, 0 0 80px #FFAAFF;
             animation: glow 2s infinite alternate;
         }
 
         @keyframes glow {
-            from { text-shadow: 0 0 20px #BB88FF; }
-            to { text-shadow: 0 0 40px #FFAAFF; }
+            from { text-shadow: 0 0 30px #BB88FF, 0 0 60px #FFAAFF; }
+            to { text-shadow: 0 0 80px #BB88FF, 0 0 120px #FFAAFF; }
         }
 
         /* Navegação rápida */
@@ -78,41 +81,42 @@
             right: 20px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             z-index: 10;
         }
 
         nav a {
             background: rgba(75,0,130,0.7);
-            padding: 10px 15px;
+            padding: 15px 20px;
             border-radius: 8px;
             font-weight: bold;
+            font-size: 1.2rem;
             transition: background 0.3s, transform 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
 
         nav a:hover {
             background: rgba(138,43,226,0.8);
-            transform: scale(1.05);
+            transform: scale(1.1);
+            box-shadow: 0 8px 10px rgba(0, 0, 0, 0.5);
         }
 
         /* Seções */
         section {
-            padding: 80px 20px;
+            padding: 100px 20px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             align-items: flex-start;
             background: rgba(0,0,0,0.85);
-            transform-style: preserve-3d;
-            perspective: 1000px;
         }
 
         article {
             max-width: 900px;
             margin: 30px;
-            background: rgba(40,0,40,0.3);
-            padding: 25px;
+            background: rgba(40,0,40,0.4);
+            padding: 35px;
             border-radius: 15px;
             box-shadow: 0 0 30px rgba(128,0,128,0.5);
             transition: transform 0.5s, box-shadow 0.5s;
@@ -120,31 +124,31 @@
 
         article:hover {
             transform: translateY(-15px) rotateY(5deg);
-            box-shadow: 0 0 60px rgba(255,0,255,0.6);
+            box-shadow: 0 0 60px rgba(255,0,255,0.8);
         }
 
         article img {
             width: 100%;
             border-radius: 15px;
             margin-bottom: 20px;
-            box-shadow: 0 0 30px rgba(128,0,128,0.6);
+            box-shadow: 0 0 30px rgba(128,0,128,0.7);
             transition: transform 0.5s;
         }
 
         article img:hover {
-            transform: scale(1.07) rotate(1deg);
+            transform: scale(1.07) rotate(2deg);
         }
 
         h2 {
             color: #DDA0DD;
-            font-size: 2.8rem;
-            margin-bottom: 15px;
+            font-size: 3rem;
+            margin-bottom: 20px;
             text-align: center;
             animation: fadeInText 1.5s ease-in-out;
         }
 
         p {
-            font-size: 1.2rem;
+            font-size: 1.3rem;
             text-align: justify;
             animation: fadeInText 2s ease-in-out;
         }
@@ -160,7 +164,7 @@
             padding: 50px 20px;
             background-color: #111;
             color: #888;
-            font-size: 1rem;
+            font-size: 1.2rem;
             border-top: 1px solid rgba(255,255,255,0.1);
         }
 
@@ -186,8 +190,8 @@
 
         /* Responsividade */
         @media (max-width: 1024px) {
-            header h1 { font-size: 4rem; }
-            article { margin: 25px; }
+            header h1 { font-size: 4.5rem; }
+            article { margin: 20px; }
         }
 
         @media (max-width: 768px) {
@@ -197,6 +201,7 @@
         }
 
         @media (max-width: 480px) {
+            header h1 { font-size: 3rem; }
             h2 { font-size: 2rem; }
             p { font-size: 1rem; }
         }
