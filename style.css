@@ -1,0 +1,362 @@
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #111;
+    color: #E0D0FF;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    position: relative;
+    padding-bottom: 100px;
+}
+
+/* Fundo animado de estrelas */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 200%;
+    height: 200%;
+    background: url('https://www.transparenttextures.com/patterns/stardust.png') repeat;
+    background-size: 200px 200px;
+    animation: starMove 120s linear infinite;
+    z-index: -1;
+}
+
+@keyframes starMove {
+    from { transform: translate(0, 0); }
+    to { transform: translate(-100px, -100px); }
+}
+
+a {
+    color: #BB88FF;
+    text-decoration: none;
+    transition: color 0.3s, transform 0.3s;
+}
+
+a:hover {
+    color: #FFAAFF;
+    transform: scale(1.05);
+}
+
+/* Header */
+header {
+    text-align: center;
+    padding: 100px 20px;
+    background: linear-gradient(135deg, #4B0082, #800080);
+    position: relative;
+    overflow: hidden;
+    border-bottom: 5px solid #BB88FF;
+}
+
+header h1 {
+    font-size: 6rem;
+    color: #FFFFFF;
+    text-shadow: 0 0 30px #BB88FF, 0 0 80px #FFAAFF;
+    animation: glow 2s infinite alternate;
+}
+
+@keyframes glow {
+    from { text-shadow: 0 0 30px #BB88FF, 0 0 60px #FFAAFF; }
+    to { text-shadow: 0 0 80px #BB88FF, 0 0 120px #FFAAFF; }
+}
+
+/* Navegação rápida */
+nav {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 10;
+}
+
+nav a {
+    background: rgba(75,0,130,0.7);
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1.2rem;
+    transition: background 0.3s, transform 0.3s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+nav a:hover {
+    background: rgba(138,43,226,0.8);
+    transform: scale(1.1);
+    box-shadow: 0 8px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Seções */
+section {
+    padding: 100px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    background: rgba(0,0,0,0.85);
+}
+
+article {
+    max-width: 900px;
+    margin: 30px;
+    background: rgba(40,0,40,0.4);
+    padding: 35px;
+    border-radius: 15px;
+    box-shadow: 0 0 30px rgba(128,0,128,0.5);
+    transition: transform 0.5s, box-shadow 0.5s;
+}
+
+article:hover {
+    transform: translateY(-15px) rotateY(5deg);
+    box-shadow: 0 0 60px rgba(255,0,255,0.8);
+}
+
+article img {
+    width: 100%;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 30px rgba(128,0,128,0.7);
+    transition: transform 0.5s;
+}
+
+article img:hover {
+    transform: scale(1.07) rotate(2deg);
+}
+
+h2 {
+    color: #DDA0DD;
+    font-size: 3rem;
+    margin-bottom: 20px;
+    text-align: center;
+    animation: fadeInText 1.5s ease-in-out;
+}
+
+p {
+    font-size: 1.3rem;
+    text-align: justify;
+    animation: fadeInText 2s ease-in-out;
+}
+
+@keyframes fadeInText {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 50px 20px;
+    background-color: #111;
+    color: #888;
+    font-size: 1.2rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Cursor roxo neon */
+* {
+    cursor: none;
+}
+
+.cursor-neon {
+    position: fixed;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #a020f0;
+    box-shadow: 0 0 5px #a020f0,
+                0 0 10px #a020f0,
+                0 0 20px #a020f0,
+                0 0 40px #a020f0;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* Estrelas roxas, Meteoros e Foguete */
+.stars-purple {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.stars-purple::before,
+.stars-purple::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    box-shadow: 120px 180px 2px #DDA0DD,
+                340px 90px 1px #BB88FF,
+                580px 420px 2px #FFAAFF,
+                720px 150px 3px #C71585,
+                950px 380px 1px #9370DB,
+                1100px 550px 2px #BA55D3,
+                80px 650px 1px #EE82EE,
+                260px 780px 2px #FF69B4,
+                1300px 120px 2px #DDA0DD,
+                1450px 400px 1px #BB88FF,
+                300px 200px 3px #D8BFD8,
+                900px 700px 2px #DA70D6;
+    opacity: 0.6;
+    animation: twinkle 6s infinite alternate;
+}
+
+.stars-purple::after {
+    animation-delay: 3s;
+    transform: scale(1.05);
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.9; }
+}
+
+.meteor {
+    position: fixed;
+    width: 4px;
+    height: 4px;
+    background: #FFAAFF;
+    border-radius: 50%;
+    box-shadow: 0 0 15px #FF69B4,
+                0 0 35px #C71585,
+                0 0 60px #800080;
+    pointer-events: none;
+    z-index: -1;
+    animation: meteor-fall linear infinite;
+}
+
+@keyframes meteor-fall {
+    0% {
+        transform: translate(-50px, -100vh) rotate(40deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(120vw, 120vh) rotate(40deg);
+        opacity: 0;
+    }
+}
+
+.rocket {
+    position: fixed;
+    font-size: 55px;
+    transform: rotate(-25deg);
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0;
+    animation: rocket-fly 30s linear infinite;
+}
+
+.rocket::before {
+    content: "🚀";
+    filter: hue-rotate(210deg) saturate(2) brightness(1.2);
+}
+
+@keyframes rocket-fly {
+    0% {
+        left: -20%;
+        top: 15%;
+        opacity: 0;
+    }
+    4% { opacity: 1; }
+    28% { opacity: 1; }
+    32% { opacity: 0; }
+    100% {
+        left: 115%;
+        top: 55%;
+    }
+}
+
+/* Calendário */
+.calendar-container {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 9;
+    background: rgba(75, 0, 130, 0.7);
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 15px rgba(187, 136, 255, 0.4);
+    border: 1px solid #BB88FF;
+    min-width: 220px;
+    backdrop-filter: blur(5px);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.calendar-container:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 25px rgba(187, 136, 255, 0.6);
+}
+
+.calendar-header {
+    text-align: center;
+    color: #FFAAFF;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-shadow: 0 0 8px #BB88FF;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    font-size: 0.9rem;
+}
+
+.calendar-day-name {
+    text-align: center;
+    color: #DDA0DD;
+    font-weight: bold;
+    padding: 4px 0;
+}
+
+.calendar-day {
+    text-align: center;
+    padding: 6px 0;
+    border-radius: 6px;
+}
+
+.calendar-day.today {
+    background: #BB88FF;
+    color: #111;
+    font-weight: bold;
+    box-shadow: 0 0 12px #FFAAFF;
+}
+
+.calendar-day.empty {
+    background: transparent;
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+    header h1 { font-size: 4.5rem; }
+    article { margin: 20px; }
+}
+
+@media (max-width: 768px) {
+    header h1 { font-size: 3.5rem; }
+    section { padding: 60px 10px; }
+    article { margin: 20px 0; }
+    .calendar-container {
+        left: 10px;
+        top: 10px;
+        padding: 10px 12px;
+        min-width: 180px;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    header h1 { font-size: 3rem; }
+    h2 { font-size: 2rem; }
+    p { font-size: 1rem; }
+}
